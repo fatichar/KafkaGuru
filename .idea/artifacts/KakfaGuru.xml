@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="javafx" name="KakfaGuru">
+    <output-path>$PROJECT_DIR$/out/artifacts/KakfaGuru</output-path>
+    <root id="root">
+      <element id="archive" name="KakfaGuru.jar">
+        <element id="module-output" name="KakfaGuru" />
+      </element>
+    </root>
+  </artifact>
+</component>
