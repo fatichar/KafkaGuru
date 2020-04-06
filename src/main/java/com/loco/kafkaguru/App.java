@@ -17,33 +17,31 @@ import java.io.IOException;
 /**
  * JavaFX App
  */
-@SpringBootApplication
+//@SpringBootApplication
 public class App extends Application {
 
     private static Scene scene;
     private static Parent rootNode;
-    private static ConfigurableApplicationContext context;
 
-    @Override
-    public void init() throws Exception {
-        String[] args = getParameters().getRaw().toArray(new String[0]);
-
-        context = new SpringApplicationBuilder()
-            .sources(SpringBootExampleApplication.class)
-            .run(args);
-    }
     @Override
     public void start(Stage stage) throws IOException {
-        FxWeaver fxWeaver = context.getBean(FxWeaver.class);
-        rootNode = fxWeaver.loadView(MainWindowController.class);
-        Scene scene = new Scene(rootNode);
+        scene = new Scene(loadFXML("MainWindow"), 640, 480);
         stage.setScene(scene);
+        stage.setMaximized(true);
         stage.show();
+    }
+
+    static void setRoot(String fxml) throws IOException {
+        scene.setRoot(loadFXML(fxml));
+    }
+
+    private static Parent loadFXML(String fxml) throws IOException {
+        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
+        return fxmlLoader.load();
     }
 
     @Override
     public void stop() {
-        this.context.close();
         Platform.exit();
     }
 

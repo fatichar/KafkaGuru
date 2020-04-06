@@ -8,25 +8,26 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import net.rgielen.fxweaver.core.FxmlView;
-import org.springframework.stereotype.Component;
+import lombok.Getter;
+import lombok.Setter;
 
-@Component
-@FxmlView("MainWindow.fxml")
+//@Component
+//@FxmlView("MainWindow.fxml")
+@Getter
+@Setter
 public class MainWindowController {
-
     @FXML
     private Button newTabButton;
 
     @FXML
     private TabPane tabPane;
 
-    @FXML
-    private void switchToSecondary() throws IOException {
-    }
-
-    public void createNewTab(ActionEvent actionEvent) {
+    public void onNewConnection(ActionEvent actionEvent) {
         ObservableList<Tab> tabs = tabPane.getTabs();
-        tabs.add(new Tab("Tab 2"));
+        Tab tab = new Tab("Connection 1");
+        KafkaPane kafkaPane = new KafkaPane();
+        tab.setContent(kafkaPane);
+        tabs.add(tab);
+        tabPane.getSelectionModel().select(tab);
     }
 }
