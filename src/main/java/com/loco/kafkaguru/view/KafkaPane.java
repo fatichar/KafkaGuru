@@ -1,6 +1,7 @@
 package com.loco.kafkaguru.view;
 
 import com.loco.kafkaguru.controller.KafkaPaneController;
+import com.loco.kafkaguru.model.KafkaClusterInfo;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.layout.AnchorPane;
 import lombok.Getter;
@@ -10,22 +11,19 @@ import java.io.IOException;
 @Getter
 public class KafkaPane extends AnchorPane {
     private KafkaPaneController controller;
+    private KafkaClusterInfo cluster;
 
-    public KafkaPane() {
-        this("", "");
-    }
-
-    public KafkaPane(String kafkaName, String kafkaUrl) {
+    public KafkaPane(KafkaPaneController controller) {
         super();
+
+        this.controller = controller;
 
         FXMLLoader loader = new FXMLLoader(getClass().getResource("KafkaPane.fxml"));
         loader.setRoot(this);
-        controller = new KafkaPaneController(kafkaName, kafkaUrl);
         loader.setController(controller);
 
         try {
             loader.load();
-            controller.onLoadingFinished();
         } catch (IOException e) {
             e.printStackTrace();
         }

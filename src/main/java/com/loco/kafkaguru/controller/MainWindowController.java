@@ -1,5 +1,6 @@
 package com.loco.kafkaguru.controller;
 
+import com.loco.kafkaguru.model.KafkaClusterInfo;
 import com.loco.kafkaguru.view.KafkaPane;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -23,20 +24,31 @@ public class MainWindowController {
     private TabPane tabPane;
 
     public void onNewConnection(ActionEvent actionEvent) {
+        KafkaClusterInfo cluster = getKafkaClusterInfo();
+
+        ObservableList<Tab> tabs = tabPane.getTabs();
+        Tab tab = new Tab(cluster.getName());
+
+        var controller = new KafkaPaneController(cluster);
+        KafkaPane kafkaPane = new KafkaPane(controller);
+        controller.loadingFinished();
+
+        tab.setContent(kafkaPane);
+        tabs.add(tab);
+        tabPane.getSelectionModel().select(tab);
+    }
+
+    private KafkaClusterInfo getKafkaClusterInfo() {
         var inputDialog = new TextInputDialog();
         inputDialog.setHeaderText("Enter kafka URL");
         inputDialog.showAndWait();
 
         var kafkaUrl = inputDialog.getEditor().getText();
         inputDialog.setHeaderText("Give a friendly name to this kafka instance");
+        inputDialog.getEditor().clear();
         inputDialog.showAndWait();
         var kafkaName = inputDialog.getEditor().getText();
 
-        ObservableList<Tab> tabs = tabPane.getTabs();
-        Tab tab = new Tab(kafkaName);
-        KafkaPane kafkaPane = new KafkaPane(kafkaName, kafkaUrl);
-        tab.setContent(kafkaPane);
-        tabs.add(tab);
-        tabPane.getSelectionModel().select(tab);
+        return new KafkaClusterInfo(kafkaName, kafkaUrl);
     }
 }
