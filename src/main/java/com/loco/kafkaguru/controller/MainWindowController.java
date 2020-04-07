@@ -1,7 +1,6 @@
-package com.loco.kafkaguru;
+package com.loco.kafkaguru.controller;
 
-import java.io.IOException;
-
+import com.loco.kafkaguru.view.KafkaPane;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;

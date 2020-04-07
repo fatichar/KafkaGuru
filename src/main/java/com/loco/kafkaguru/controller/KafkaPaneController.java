@@ -1,4 +1,4 @@
-package com.loco.kafkaguru;
+package com.loco.kafkaguru.controller;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;

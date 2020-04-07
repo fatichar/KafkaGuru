@@ -1,8 +1,7 @@
-package com.loco.kafkaguru;
+package com.loco.kafkaguru.view;
 
-import com.loco.kafkaguru.KafkaPaneController;
+import com.loco.kafkaguru.controller.KafkaPaneController;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.layout.AnchorPane;
 import lombok.Getter;
 
