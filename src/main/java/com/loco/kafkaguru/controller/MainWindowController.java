@@ -12,8 +12,6 @@ import javafx.scene.control.TextInputDialog;
 import lombok.Getter;
 import lombok.Setter;
 
-//@Component
-//@FxmlView("MainWindow.fxml")
 @Getter
 @Setter
 public class MainWindowController {
@@ -26,15 +24,14 @@ public class MainWindowController {
     public void onNewConnection(ActionEvent actionEvent) {
         KafkaClusterInfo cluster = getKafkaClusterInfo();
 
-        ObservableList<Tab> tabs = tabPane.getTabs();
-        Tab tab = new Tab(cluster.getName());
-
         var controller = new KafkaPaneController(cluster);
         KafkaPane kafkaPane = new KafkaPane(controller);
         controller.loadingFinished();
 
+        Tab tab = new Tab(cluster.getName());
         tab.setContent(kafkaPane);
-        tabs.add(tab);
+
+        tabPane.getTabs().add(tab);
         tabPane.getSelectionModel().select(tab);
     }
 

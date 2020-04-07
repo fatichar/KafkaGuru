@@ -5,6 +5,7 @@ import com.loco.kafkaguru.core.listeners.TopicsListener;
 import com.loco.kafkaguru.model.KafkaClusterInfo;
 import com.loco.kafkaguru.viewmodel.AbstractNode;
 import com.loco.kafkaguru.viewmodel.ClusterNode;
+import com.loco.kafkaguru.viewmodel.PartitionNode;
 import com.loco.kafkaguru.viewmodel.TopicNode;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -106,6 +107,19 @@ public class KafkaPaneController implements Initializable, TopicsListener {
     }
 
     private TreeItem<AbstractNode> createTopicNode(String topic, List<PartitionInfo> partitions) {
-        return new TreeItem<AbstractNode>(new TopicNode(null, topic, partitions));
+        var topicNode = new TreeItem<AbstractNode>(new TopicNode(null, topic, partitions));
+
+        var partitionNodes = createPartitionNodes(partitions);
+        topicNode.getChildren().addAll(partitionNodes);
+
+        return topicNode;
+    }
+
+    private List<TreeItem<AbstractNode>> createPartitionNodes(List<PartitionInfo> partitions) {
+        return partitions.stream().map(this::createPartitionNode).collect(Collectors.toList());
+    }
+
+    private TreeItem<AbstractNode> createPartitionNode(PartitionInfo partitionInfo) {
+        return new TreeItem<AbstractNode>(new PartitionNode(null, partitionInfo));
     }
 }
