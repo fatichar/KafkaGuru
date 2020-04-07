@@ -2,10 +2,7 @@ package com.loco.kafkaguru;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.SplitPane;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,9 +17,12 @@ import java.util.ResourceBundle;
 @Getter
 @Setter
 public class KafkaPaneController implements Initializable {
+    private String kafkaName;
+    private String kafkaUrl;
+
     @FXML private SplitPane topicsMessagesPane;
 
-    @FXML private TreeView<?> topicsTree;
+    @FXML private TreeView<String> topicsTree;
 
     @FXML private SplitPane messagesSplitPane;
 
@@ -30,10 +30,17 @@ public class KafkaPaneController implements Initializable {
 
     @FXML private TextArea messageArea;
 
-    public KafkaPaneController() {}
+    public KafkaPaneController(String kafkaName, String kafkaUrl) {
+        this.kafkaName = kafkaName;
+        this.kafkaUrl = kafkaUrl;
+    }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
 
+    }
+
+    public void onLoadingFinished() {
+        topicsTree.setRoot(new TreeItem<>(kafkaName));
     }
 }

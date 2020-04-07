@@ -8,6 +8,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TextInputDialog;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,9 +24,18 @@ public class MainWindowController {
     private TabPane tabPane;
 
     public void onNewConnection(ActionEvent actionEvent) {
+        var inputDialog = new TextInputDialog();
+        inputDialog.setHeaderText("Enter kafka URL");
+        inputDialog.showAndWait();
+
+        var kafkaUrl = inputDialog.getEditor().getText();
+        inputDialog.setHeaderText("Give a friendly name to this kafka instance");
+        inputDialog.showAndWait();
+        var kafkaName = inputDialog.getEditor().getText();
+
         ObservableList<Tab> tabs = tabPane.getTabs();
-        Tab tab = new Tab("Connection 1");
-        KafkaPane kafkaPane = new KafkaPane();
+        Tab tab = new Tab(kafkaName);
+        KafkaPane kafkaPane = new KafkaPane(kafkaName, kafkaUrl);
         tab.setContent(kafkaPane);
         tabs.add(tab);
         tabPane.getSelectionModel().select(tab);

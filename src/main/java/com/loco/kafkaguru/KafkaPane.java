@@ -4,24 +4,29 @@ import com.loco.kafkaguru.KafkaPaneController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.layout.AnchorPane;
+import lombok.Getter;
 
 import java.io.IOException;
 
+@Getter
 public class KafkaPane extends AnchorPane {
-    KafkaPaneController controller;
+    private KafkaPaneController controller;
 
     public KafkaPane() {
+        this("", "");
+    }
+
+    public KafkaPane(String kafkaName, String kafkaUrl) {
         super();
 
         FXMLLoader loader = new FXMLLoader(getClass().getResource("KafkaPane.fxml"));
         loader.setRoot(this);
-        controller = new KafkaPaneController();
+        controller = new KafkaPaneController(kafkaName, kafkaUrl);
         loader.setController(controller);
 
-        Node n = null;
         try {
-            n = loader.load();
-//            this.getChildren().add(n);//don't forget to add the arrow to the custom control
+            loader.load();
+            controller.onLoadingFinished();
         } catch (IOException e) {
             e.printStackTrace();
         }
