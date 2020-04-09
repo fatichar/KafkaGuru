@@ -1,28 +1,38 @@
 package com.loco.kafkaguru.viewmodel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import javafx.beans.property.*;
 import lombok.Data;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Date;
 
-@Data
 public class MessageModel {
-    private int partition;
-    private long offset;
-    private String key;
-    private String message;
-    private String timeStamp;
+    private IntegerProperty partition;
+    private LongProperty offset;
+    private StringProperty key;
+    private StringProperty messageBody;
 
-    ObjectMapper mapper = new ObjectMapper();
+    private StringProperty messageSummary;
+    private SimpleObjectProperty<Date> timestamp;
+    private ConsumerRecord<String, String> record;
+
+    private ObjectMapper mapper = new ObjectMapper();
 
     public MessageModel(ConsumerRecord<String, String> record) {
-        key = record.key();
-        message = format(record.value());
-        offset = record.offset();
-        partition = record.partition();
-        timeStamp = Instant.ofEpochMilli(record.timestamp()).toString();
+        partition = new SimpleIntegerProperty(record.partition());
+        offset = new SimpleLongProperty(record.offset());
+        key = new SimpleStringProperty(record.key());
+        messageBody = new SimpleStringProperty(format(record.value()));
+        messageSummary = new SimpleStringProperty(summarize(record.value()));
+        timestamp = new SimpleObjectProperty<>(Date.from(Instant.ofEpochMilli(record.timestamp())));
+        this.record = record;
+    }
+
+    private String summarize(String text) {
+        return text == null ? null : text.replace("\n", "\\n");
     }
 
     private String format(String text) {
@@ -35,48 +45,79 @@ public class MessageModel {
         }
     }
 
-    public static int getColumnCount() {
-        return 5;
+    public int getPartition() {
+        return partition.get();
     }
 
-    public static Class<?> getColumnClass(int columnIndex) {
-        if (0 == columnIndex) {
-            return Long.class;
-        }
-        return String.class;
+    public IntegerProperty partitionProperty() {
+        return partition;
     }
 
-    public static String getColumnName(int columnIndex) {
-        switch (columnIndex){
-            case 0:
-                return "partition";
-            case 1:
-                return "offset";
-            case 2:
-                return "key";
-            case 3:
-                return "message";
-            case 4:
-                return "timeStamp";
-            default:
-                return "Invalid";
-        }
+    public void setPartition(int partition) {
+        this.partition.set(partition);
     }
 
-    public Object getValueAt(int columnIndex) {
-        switch (columnIndex){
-            case 0:
-                return partition;
-            case 1:
-                return offset;
-            case 2:
-                return key;
-            case 3:
-                return message;
-            case 4:
-                return timeStamp;
-            default:
-                return null;
-        }
+    public long getOffset() {
+        return offset.get();
+    }
+
+    public LongProperty offsetProperty() {
+        return offset;
+    }
+
+    public void setOffset(long offset) {
+        this.offset.set(offset);
+    }
+
+    public String getKey() {
+        return key.get();
+    }
+
+    public StringProperty keyProperty() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key.set(key);
+    }
+
+    public String getMessageBody() {
+        return messageBody.get();
+    }
+
+    public StringProperty messageBodyProperty() {
+        return messageBody;
+    }
+
+    public void setMessageBody(String messageBody) {
+        this.messageBody.set(messageBody);
+    }
+
+    public String getMessageSummary() {
+        return messageSummary.get();
+    }
+
+    public StringProperty messageSummaryProperty() {
+        return messageSummary;
+    }
+
+    public Date getTimestamp() {
+        return timestamp.get();
+    }
+
+    public SimpleObjectProperty<Date> timestampProperty() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Date timestamp) {
+        this.timestamp.set(timestamp);
+    }
+
+    public ConsumerRecord<String, String> getRecord() {
+        return record;
+    }
+
+    public void setRecord(ConsumerRecord<String, String> record) {
+        this.record = record;
     }
 }

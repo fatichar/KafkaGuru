@@ -26,7 +26,6 @@ public class MainWindowController {
 
         var controller = new KafkaPaneController(cluster);
         KafkaPane kafkaPane = new KafkaPane(controller);
-        controller.loadingFinished();
 
         Tab tab = new Tab(cluster.getName());
         tab.setContent(kafkaPane);
@@ -36,16 +35,17 @@ public class MainWindowController {
     }
 
     private KafkaClusterInfo getKafkaClusterInfo() {
-        var inputDialog = new TextInputDialog();
-        inputDialog.setHeaderText("Enter kafka URL");
-        inputDialog.showAndWait();
+//        var inputDialog = new TextInputDialog();
+//        inputDialog.setHeaderText("Enter kafka URL");
+//        inputDialog.showAndWait();
+//
+//        var kafkaUrl = inputDialog.getEditor().getText();
+//        inputDialog.setHeaderText("Give a friendly name to this kafka instance");
+//        inputDialog.getEditor().clear();
+//        inputDialog.showAndWait();
+//        var kafkaName = inputDialog.getEditor().getText();
 
-        var kafkaUrl = inputDialog.getEditor().getText();
-        inputDialog.setHeaderText("Give a friendly name to this kafka instance");
-        inputDialog.getEditor().clear();
-        inputDialog.showAndWait();
-        var kafkaName = inputDialog.getEditor().getText();
-
-        return new KafkaClusterInfo(kafkaName, kafkaUrl);
+//        return new KafkaClusterInfo(kafkaName, kafkaUrl);
+        return new KafkaClusterInfo("Dev Sandbox", "ec2-54-226-137-43.compute-1.amazonaws.com:9092");
     }
 }
