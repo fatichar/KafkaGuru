@@ -1,32 +1,38 @@
 package com.loco.kafkaguru.core;
 
-import com.loco.kafkaguru.core.listeners.TopicsListener;
-import javafx.scene.control.Alert;
+import com.loco.kafkaguru.core.listeners.KafkaListener;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.*;
 
-@Getter
 public class KafkaInstance {
-    private String name;
-    private String url;
+    @Getter private String name;
+    @Getter private String url;
     private Properties properties;
     private KafkaConsumer<String, String> consumer;
-    private Map<String, List<PartitionInfo>> topics;
+    @Getter private Map<String, List<PartitionInfo>> topics;
 
-    private Set<TopicsListener> topicsListeners = new HashSet<>();
+    private Set<KafkaListener> kafkaListeners = new HashSet<>();
 
-    public KafkaInstance(String name, String url){
+    private synchronized void setConsumer(KafkaConsumer<String, String> consumer) {
+        this.consumer = consumer;
+    }
+
+    public KafkaInstance(String name, String url) {
         this(name, url, new Properties());
     }
 
-    public KafkaInstance(String name, String url, @NonNull Properties properties){
+    public KafkaInstance(String name, String url, @NonNull Properties properties) {
         this.name = name;
         this.properties = properties;
 
@@ -34,7 +40,7 @@ public class KafkaInstance {
         if (parts.length < 1) {
             throw new IllegalArgumentException("Url is empty");
         }
-        if (parts.length > 2){
+        if (parts.length > 2) {
             throw new IllegalArgumentException("Url should not have more than one ':' separator");
         }
         String host = parts[0];
@@ -42,54 +48,119 @@ public class KafkaInstance {
         this.url = createUrl(host, port);
     }
 
-    public static String createUrl(String host, int port){
+    public static String createUrl(String host, int port) {
         return host + ':' + port;
     }
 
-    public void connect() throws UnknownHostException {
-        consumer = createConsumer();
+    public void connect() throws KafkaException, UnknownHostException {
+        setConsumer(createConsumer(url, properties));
         refreshTopics();
     }
 
-    public void refreshTopics(){
-        try {
-            var topics = consumer.listTopics();
+    public void refreshTopics() throws KafkaException {
+        synchronized (consumer) {
+            var topics = consumer.listTopics(Duration.ofSeconds(5));
             setTopics(topics);
-        } catch (Exception e){
-            System.out.println("");
         }
     }
 
     private void setTopics(Map<String, List<PartitionInfo>> topics) {
-        if (!topics.equals(this.topics)){
+        if (!topics.equals(this.topics)) {
             this.topics = topics;
-            topicsListeners.forEach(listener -> listener.topicsUpdated(topics));
+            synchronized (kafkaListeners) {
+                kafkaListeners.forEach(listener -> listener.topicsUpdated(topics));
+            }
         }
     }
 
-    public boolean addTopicsListener(TopicsListener listener){
-        return topicsListeners.add(listener);
+    public boolean addKafkaListener(KafkaListener listener) {
+        synchronized (kafkaListeners) {
+            return kafkaListeners.add(listener);
+        }
     }
 
-    public boolean removeTopicsListener(TopicsListener listener){
-        return topicsListeners.remove(listener);
+    public boolean removeKafkaListener(KafkaListener listener) {
+        synchronized (kafkaListeners) {
+            return kafkaListeners.remove(listener);
+        }
     }
 
-    private KafkaConsumer<String, String> createConsumer() throws UnknownHostException {
-        properties.putIfAbsent("bootstrap.servers", url);
-        properties.putIfAbsent("client.id", InetAddress.getLocalHost().getHostName());
-        properties.putIfAbsent("group.id", "kafka-tool");
-        properties.putIfAbsent("auto.offset.reset", "earliest");
-        properties.putIfAbsent("enable.auto.commit", "false");
-        properties.putIfAbsent("max.poll.records", 1000);
-        properties.putIfAbsent("key.deserializer", StringDeserializer.class);
-        properties.putIfAbsent("value.deserializer", StringDeserializer.class);
+    private KafkaConsumer<String, String> createConsumer(String url, Properties properties)
+            throws UnknownHostException {
+        this.properties.putIfAbsent("bootstrap.servers", url);
+        this.properties.putIfAbsent("client.id", InetAddress.getLocalHost().getHostName());
+        this.properties.putIfAbsent("group.id", "kafka-tool");
+        this.properties.putIfAbsent("auto.offset.reset", "earliest");
+        this.properties.putIfAbsent("enable.auto.commit", "false");
+        this.properties.putIfAbsent("max.poll.records", 1000);
+        this.properties.putIfAbsent("key.deserializer", StringDeserializer.class);
+        this.properties.putIfAbsent("value.deserializer", StringDeserializer.class);
 
-        return new KafkaConsumer<String, String>(properties);
+        return new KafkaConsumer<String, String>(this.properties);
     }
 
-    @Override
-    public String toString(){
-        return name;
+    public void connectAsync() {
+        new Thread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    connect();
+                                } catch (UnknownHostException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        })
+                .start();
+    }
+
+    public void assign(List<TopicPartition> topicPartitions) {
+        synchronized (consumer) {
+            consumer.assign(topicPartitions);
+        }
+    }
+
+    public void seek(TopicPartition key, long startOffset) {
+        synchronized (consumer) {
+            consumer.seek(key, startOffset);
+        }
+    }
+
+    public ConsumerRecords<String, String> poll(Duration timeout) {
+        synchronized (consumer) {
+            return consumer.poll(timeout);
+        }
+    }
+
+    public Map<TopicPartition, Long> getStartOffsets(List<TopicPartition> topicPartitions) {
+        synchronized (consumer) {
+            return consumer.beginningOffsets(topicPartitions);
+        }
+    }
+
+    public Map<TopicPartition, Long> getEndOffsets(List<TopicPartition> topicPartitions) {
+        synchronized (consumer) {
+            return consumer.endOffsets(topicPartitions);
+        }
+    }
+
+    public List<PartitionOffset> getOffsets(List<TopicPartition> topicPartitions) {
+        var offsets = new ArrayList<PartitionOffset>();
+
+        Map<TopicPartition, Long> startOffsets;
+        Map<TopicPartition, Long> endOffsets;
+
+        synchronized (consumer) {
+            startOffsets = getStartOffsets(topicPartitions);
+            endOffsets = getEndOffsets(topicPartitions);
+        }
+        for (var entry : startOffsets.entrySet()) {
+            var partition = entry.getKey();
+            var startOffset = entry.getValue();
+            var endOffset = endOffsets.get(partition);
+
+            offsets.add(new PartitionOffset(partition, startOffset, endOffset));
+        }
+        return offsets;
     }
 }

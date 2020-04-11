@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration status="WARN">
+    <Properties>
+        <Property name="PID">????</Property>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%t] %X{requestId} %c{1} - %msg%n</Property>
+        <Property name="basePath">var/out/logs</Property>
+    </Properties>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT" follow="true">
+<!--            <JsonLayout complete="false" compact="true" eventEol="true"-->
+<!--                        includeStacktrace="true" stacktraceAsString="true" properties="false">-->
+<!--            </JsonLayout>-->
+        </Console>
+        <RollingFile name="fileLogger" fileName="${basePath}/application.log"
+                     filePattern="${basePath}/application-%d{yyyy-MM-dd-HH}.log">
+            <PatternLayout pattern="${LOG_PATTERN}" />
+            <Policies>
+                <!-- rollover on startup, daily and when the file reaches 10 MegaBytes -->
+                <OnStartupTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10 MB" />
+                <TimeBasedTriggeringPolicy interval="1" modulate="true" />
+            </Policies>
+        </RollingFile>
+    </Appenders>
+    <Loggers>
+        <Root level="warn">
+            <AppenderRef ref="Console" />
+            <AppenderRef ref="fileLogger" />
+        </Root>
+        <Logger name="org.hibernate.validator.internal.util.Version" level="warn" />
+        <Logger name="org.apache.coyote.http11.Http11NioProtocol" level="warn" />
+        <Logger name="org.apache.tomcat.util.net.NioSelectorPool" level="warn" />
+        <Logger name="org.springframework.web" level="warn" />
+        <AsyncLogger name="com.loco.kafkaguru" level="info" additivity="false">
+            <AppenderRef ref="Console" />
+            <AppenderRef ref="fileLogger" />
+        </AsyncLogger>
+    </Loggers>
+</Configuration>

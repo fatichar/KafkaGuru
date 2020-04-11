@@ -46,7 +46,7 @@ public class MainWindowController implements Initializable {
     private void setPreferences(Preferences preferences) {
         try {
             var childrenNames = preferences.childrenNames();
-//            childControllers = new ArrayList<>();
+            //            childControllers = new ArrayList<>();
             childControllers =
                     Arrays.stream(childrenNames)
                             .map(createChild(preferences))
@@ -74,7 +74,8 @@ public class MainWindowController implements Initializable {
             preferences.flush();
         } catch (BackingStoreException e) {
             e.printStackTrace();
-            new javafx.scene.control.Alert(Alert.AlertType.ERROR, "Failed to save preferences");
+            new javafx.scene.control.Alert(Alert.AlertType.ERROR, "Failed to save preferences")
+                    .showAndWait();
         }
     }
 
@@ -84,7 +85,7 @@ public class MainWindowController implements Initializable {
 
     public void onNewConnection(ActionEvent actionEvent) {
         KafkaClusterInfo cluster = getNewClusterInfo();
-        if (cluster == null){
+        if (cluster == null) {
             return;
         }
         var childPreferences = preferences.node(cluster.getName());
@@ -109,18 +110,18 @@ public class MainWindowController implements Initializable {
     }
 
     private KafkaClusterInfo getNewClusterInfo() {
-                var inputDialog = new TextInputDialog();
-        //        inputDialog.setHeaderText("Enter kafka URL");
-        //        inputDialog.showAndWait();
-        //
-        //        var kafkaUrl = inputDialog.getEditor().getText();
-        //        inputDialog.setHeaderText("Give a friendly name to this kafka instance");
-        //        inputDialog.getEditor().clear();
-        //        inputDialog.showAndWait();
-        //        var kafkaName = inputDialog.getEditor().getText();
+        var inputDialog = new TextInputDialog();
+        inputDialog.setHeaderText("Enter kafka URL");
+        inputDialog.showAndWait();
 
-        //        return new KafkaClusterInfo(kafkaName, kafkaUrl);
-        return new KafkaClusterInfo(
-                "Dev Sandbox", "ec2-54-226-137-43.compute-1.amazonaws.com:9092");
+        var kafkaUrl = inputDialog.getEditor().getText();
+        inputDialog.setHeaderText("Give a friendly name to this kafka instance");
+        inputDialog.getEditor().clear();
+        inputDialog.showAndWait();
+        var kafkaName = inputDialog.getEditor().getText();
+
+        return new KafkaClusterInfo(kafkaName, kafkaUrl);
+        //        return new KafkaClusterInfo(
+        //                "Dev Sandbox", "ec2-54-226-137-43.compute-1.amazonaws.com:9092");
     }
 }

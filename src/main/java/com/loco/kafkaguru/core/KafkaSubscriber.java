@@ -1,5 +1,6 @@
 package com.loco.kafkaguru.core;
 
+import com.loco.kafkaguru.core.KafkaReader;
 import lombok.NonNull;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.PartitionInfo;
@@ -19,12 +20,8 @@ public class KafkaSubscriber {
     }
 
     public boolean subscribe(String topic){
-        getConsumer().subscribe(Arrays.asList(topic));
+//        getConsumer().subscribe(Arrays.asList(topic));
 
         return true;
-    }
-
-    private Consumer getConsumer() {
-        return reader.getKafkaInstance().getConsumer();
     }
 }

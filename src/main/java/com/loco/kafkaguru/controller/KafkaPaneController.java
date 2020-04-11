@@ -2,27 +2,30 @@ package com.loco.kafkaguru.controller;
 
 import com.loco.kafkaguru.core.KafkaInstance;
 import com.loco.kafkaguru.core.KafkaReader;
-import com.loco.kafkaguru.core.listeners.TopicsListener;
+import com.loco.kafkaguru.core.listeners.KafkaListener;
 import com.loco.kafkaguru.model.KafkaClusterInfo;
 import com.loco.kafkaguru.viewmodel.*;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.util.*;
+import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
-public class KafkaPaneController implements Initializable, TopicsListener {
+@Log4j2
+public class KafkaPaneController implements Initializable, KafkaListener {
   // UI controls
   @FXML
   private SplitPane topicsMessagesPane;
@@ -52,6 +55,7 @@ public class KafkaPaneController implements Initializable, TopicsListener {
   // data fields
   private KafkaClusterInfo cluster;
   private KafkaInstance kafkaInstance;
+
   private Map<String, List<PartitionInfo>> topics;
   private KafkaReader kafkaReader;
   private ClusterNode clusterNode;
@@ -63,17 +67,17 @@ public class KafkaPaneController implements Initializable, TopicsListener {
     this.preferences = preferences;
     var name = preferences.get("name", null);
     var url = preferences.get("url", null);
-    if (StringUtils.isEmpty(name)){
+    if (StringUtils.isEmpty(name)) {
       throw new IllegalArgumentException("name is not specified");
     }
-    if (StringUtils.isEmpty(url)){
+    if (StringUtils.isEmpty(url)) {
       throw new IllegalArgumentException("url is not specified");
     }
 
     cluster = new KafkaClusterInfo(name, url);
   }
 
-  public String getName(){
+  public String getName() {
     return cluster == null ? "" : cluster.getName();
   }
 
@@ -83,10 +87,19 @@ public class KafkaPaneController implements Initializable, TopicsListener {
     setupTopicsTree();
     setupMessagesView();
 
-    try {
-      kafkaInstance.connect();
-    } catch (UnknownHostException e) {
-      e.printStackTrace();
+    kafkaInstance.connectAsync();
+  }
+
+  // TODO use this
+  private void removeClusterNode() {
+    var removeCluster = new Alert(Alert.AlertType.ERROR, "Failed to fetch topics", ButtonType.YES, ButtonType.NO)
+        .showAndWait();
+    if (removeCluster.orElse(ButtonType.NO).equals(ButtonType.YES)) {
+      try {
+        preferences.removeNode();
+      } catch (BackingStoreException ex) {
+        ex.printStackTrace();
+      }
     }
   }
 
@@ -113,20 +126,25 @@ public class KafkaPaneController implements Initializable, TopicsListener {
   private void setupKafka() {
     kafkaReader = new KafkaReader(cluster.getName(), cluster.getUrl());
     kafkaInstance = kafkaReader.getKafkaInstance();
-    kafkaReader.getKafkaInstance().addTopicsListener(this);
+    kafkaReader.getKafkaInstance().addKafkaListener(this);
     clusterNode = new ClusterNode(kafkaInstance);
   }
 
   private void treeSelectionChanged(TreeItem<AbstractNode> oldItem, TreeItem<AbstractNode> newItem) {
-    fetchMessages();
+    if (newItem != null) {
+      messagesTable.getItems().clear();
+      topicsTree.setDisable(true);
+      fetchMessages(newItem.getValue());
+    }
   }
 
-  private void fetchMessages() {
+  private void fetchMessages(AbstractNode node) {
     try {
-      var topicPartitions = getSelectedTopicPartitions();
-
-      var topicRecords = kafkaReader.getMessages(topicPartitions, 50);
-      process(topicRecords);
+      if (node == null) {
+        node = getSelectedNode();
+      }
+      var topicPartitions = getTopicPartitions(node);
+      kafkaReader.getMessagesAsync(topicPartitions, 50, KafkaPaneController.this);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -153,8 +171,10 @@ public class KafkaPaneController implements Initializable, TopicsListener {
     }
   }
 
-  private List<TopicPartition> getSelectedTopicPartitions() {
-    var selectedNode = getSelectedNode();
+  private List<TopicPartition> getTopicPartitions(AbstractNode selectedNode) {
+    if (selectedNode == null) {
+      return new ArrayList<>();
+    }
 
     final List<PartitionInfo> partitionInfos = new ArrayList<>();
     TopicNode topicNode = null;
@@ -167,11 +187,9 @@ public class KafkaPaneController implements Initializable, TopicsListener {
       PartitionNode partitionNode = (PartitionNode) selectedNode;
       topicNode = (TopicNode) partitionNode.getParent();
       partitionInfos.add(partitionNode.getPartition());
-    } else {
-      return null;
     }
 
-    final String topic = topicNode.getTopic();
+    final String topic = topicNode == null ? null : topicNode.getTopic();
 
     return partitionInfos.stream().map(pi -> new TopicPartition(topic, pi.partition())).collect(Collectors.toList());
   }
@@ -186,11 +204,27 @@ public class KafkaPaneController implements Initializable, TopicsListener {
   public void topicsUpdated(Map<String, List<PartitionInfo>> newTopics) {
     try {
       if (topics == null || !newTopics.keySet().equals(topics.keySet())) {
-        updateTopicsTree(newTopics);
+        Platform.runLater(new Runnable() {
+          @Override
+          public void run() {
+            updateTopicsTree(newTopics);
+          }
+        });
       }
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+
+  @Override
+  public void messagesReceived(List<ConsumerRecord<String, String>> records) {
+    Platform.runLater(new Runnable() {
+      @Override
+      public void run() {
+        topicsTree.setDisable(false);
+        process(records);
+      }
+    });
   }
 
   private void updateTopicsTree(Map<String, List<PartitionInfo>> newTopics) {
