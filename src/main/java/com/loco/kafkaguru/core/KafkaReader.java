@@ -79,14 +79,6 @@ public class KafkaReader {
         return partitionRecords.count();
     }
 
-    public Map<String, List<PartitionInfo>> getTopics() {
-        return kafkaInstance.getTopics();
-    }
-
-    public List<PartitionInfo> getTopic(@NonNull String topic) {
-        return kafkaInstance.getTopics().get(topic);
-    }
-
     public void getMessagesAsync(
             List<TopicPartition> topicPartitions, int i, KafkaListener listener) {
         log.info("In getMessagesAsync()");

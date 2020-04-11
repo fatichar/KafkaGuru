@@ -58,6 +58,8 @@ public class KafkaPaneController implements Initializable, KafkaListener {
   private MessagesModel messagesModel;
 
   private Preferences preferences;
+  private boolean followTreeSelection = true;
+  private TreeItem<AbstractNode> currentTreeItem;
 
   public KafkaPaneController(Preferences preferences) {
     this.preferences = preferences;
@@ -83,12 +85,13 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     setupTopicsTree();
     setupMessagesView();
 
-    kafkaInstance.connectAsync();
+    //TODO report connection error
+    kafkaInstance.connectAsync(this);
   }
 
   // TODO use this
   private void removeClusterNode() {
-    var removeCluster = new Alert(Alert.AlertType.ERROR, "Failed to fetch topics", ButtonType.YES, ButtonType.NO)
+    var removeCluster = new Alert(Alert.AlertType.ERROR, "Failed to fetch topics.\nWould you like to remove this cluster?", ButtonType.YES, ButtonType.NO)
         .showAndWait();
     if (removeCluster.orElse(ButtonType.NO).equals(ButtonType.YES)) {
       try {
@@ -127,7 +130,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
       @Override
       public void changed(ObservableValue<? extends TreeItem<AbstractNode>> observableValue,
           TreeItem<AbstractNode> oldItem, TreeItem<AbstractNode> newItem) {
-        treeSelectionChanged(oldItem, newItem);
+        treeSelectionChanged(newItem);
       }
     });
   }
@@ -135,14 +138,14 @@ public class KafkaPaneController implements Initializable, KafkaListener {
   private void setupKafka() {
     kafkaReader = new KafkaReader(cluster.getName(), cluster.getUrl());
     kafkaInstance = kafkaReader.getKafkaInstance();
-    kafkaReader.getKafkaInstance().addKafkaListener(this);
     clusterNode = new ClusterNode(kafkaInstance);
   }
 
-  private void treeSelectionChanged(TreeItem<AbstractNode> oldItem, TreeItem<AbstractNode> newItem) {
-    if (newItem != null) {
+  private void treeSelectionChanged(TreeItem<AbstractNode> newItem) {
+    if (followTreeSelection && newItem != null) {
       messagesTable.getItems().clear();
-      topicsTree.setDisable(true);
+      currentTreeItem = newItem;
+      followTreeSelection = false;
       fetchMessages(newItem.getValue());
     }
   }
@@ -211,6 +214,10 @@ public class KafkaPaneController implements Initializable, KafkaListener {
 
   @Override
   public void topicsUpdated(Map<String, List<PartitionInfo>> newTopics) {
+    if (newTopics == null){
+      // TODO show alert
+      return;
+    }
     try {
       if (topics == null || !newTopics.keySet().equals(topics.keySet())) {
         Platform.runLater(new Runnable() {
@@ -230,10 +237,28 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     Platform.runLater(new Runnable() {
       @Override
       public void run() {
-        topicsTree.setDisable(false);
         process(records);
+        followTreeSelection = true;
+        var selectionModel = topicsTree.getSelectionModel();
+        var selectedTreeItem = selectionModel.getSelectedItem();
+
+        if (currentTreeItem != selectedTreeItem){
+          treeSelectionChanged(selectedTreeItem);
+        }
       }
     });
+  }
+
+  @Override
+  public void connected(boolean really) {
+    if (!really){
+      Platform.runLater(new Runnable() {
+        @Override
+        public void run() {
+          removeClusterNode();
+        }
+      });
+    }
   }
 
   private void updateTopicsTree(Map<String, List<PartitionInfo>> newTopics) {

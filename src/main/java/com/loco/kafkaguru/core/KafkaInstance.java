@@ -3,6 +3,7 @@ package com.loco.kafkaguru.core;
 import com.loco.kafkaguru.core.listeners.KafkaListener;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.KafkaException;
@@ -15,14 +16,12 @@ import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.*;
 
+@Log4j2
 public class KafkaInstance {
     @Getter private String name;
     @Getter private String url;
     private Properties properties;
     private KafkaConsumer<String, String> consumer;
-    @Getter private Map<String, List<PartitionInfo>> topics;
-
-    private Set<KafkaListener> kafkaListeners = new HashSet<>();
 
     private synchronized void setConsumer(KafkaConsumer<String, String> consumer) {
         this.consumer = consumer;
@@ -52,36 +51,13 @@ public class KafkaInstance {
         return host + ':' + port;
     }
 
-    public void connect() throws KafkaException, UnknownHostException {
+    private void connect() throws KafkaException, UnknownHostException {
         setConsumer(createConsumer(url, properties));
-        refreshTopics();
     }
 
-    public void refreshTopics() throws KafkaException {
+    public Map<String, List<PartitionInfo>> refreshTopics() throws KafkaException {
         synchronized (consumer) {
-            var topics = consumer.listTopics(Duration.ofSeconds(5));
-            setTopics(topics);
-        }
-    }
-
-    private void setTopics(Map<String, List<PartitionInfo>> topics) {
-        if (!topics.equals(this.topics)) {
-            this.topics = topics;
-            synchronized (kafkaListeners) {
-                kafkaListeners.forEach(listener -> listener.topicsUpdated(topics));
-            }
-        }
-    }
-
-    public boolean addKafkaListener(KafkaListener listener) {
-        synchronized (kafkaListeners) {
-            return kafkaListeners.add(listener);
-        }
-    }
-
-    public boolean removeKafkaListener(KafkaListener listener) {
-        synchronized (kafkaListeners) {
-            return kafkaListeners.remove(listener);
+            return consumer.listTopics(Duration.ofSeconds(5));
         }
     }
 
@@ -99,15 +75,24 @@ public class KafkaInstance {
         return new KafkaConsumer<String, String>(this.properties);
     }
 
-    public void connectAsync() {
+    public void connectAsync(KafkaListener listener) {
         new Thread(
                         new Runnable() {
                             @Override
                             public void run() {
                                 try {
                                     connect();
-                                } catch (UnknownHostException e) {
-                                    e.printStackTrace();
+                                    listener.connected(true);
+                                } catch (KafkaException | UnknownHostException e) {
+                                    log.error("Failed to connect to kafka ", e);
+                                    listener.connected(false);
+                                }
+                                try {
+                                    var topics = refreshTopics();
+                                    listener.topicsUpdated(topics);
+                                } catch (KafkaException e) {
+                                    log.error("Failed to fetch topics from kafka ", e);
+                                    listener.topicsUpdated(null);
                                 }
                             }
                         })
