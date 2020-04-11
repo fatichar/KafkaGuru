@@ -11,6 +11,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -18,6 +19,7 @@ import org.apache.kafka.common.TopicPartition;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
 public class KafkaPaneController implements Initializable, TopicsListener {
@@ -55,8 +57,24 @@ public class KafkaPaneController implements Initializable, TopicsListener {
   private ClusterNode clusterNode;
   private MessagesModel messagesModel;
 
-  public KafkaPaneController(KafkaClusterInfo cluster) {
-    this.cluster = cluster;
+  private Preferences preferences;
+
+  public KafkaPaneController(Preferences preferences) {
+    this.preferences = preferences;
+    var name = preferences.get("name", null);
+    var url = preferences.get("url", null);
+    if (StringUtils.isEmpty(name)){
+      throw new IllegalArgumentException("name is not specified");
+    }
+    if (StringUtils.isEmpty(url)){
+      throw new IllegalArgumentException("url is not specified");
+    }
+
+    cluster = new KafkaClusterInfo(name, url);
+  }
+
+  public String getName(){
+    return cluster == null ? "" : cluster.getName();
   }
 
   @Override

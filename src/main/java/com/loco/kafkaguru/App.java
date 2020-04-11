@@ -12,11 +12,8 @@ import java.io.IOException;
 /**
  * JavaFX App
  */
-//@SpringBootApplication
 public class App extends Application {
-
     private static Scene scene;
-    private static Parent rootNode;
 
     @Override
     public void start(Stage stage) throws IOException {

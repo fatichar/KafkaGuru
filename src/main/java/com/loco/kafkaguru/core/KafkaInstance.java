@@ -1,6 +1,7 @@
 package com.loco.kafkaguru.core;
 
 import com.loco.kafkaguru.core.listeners.TopicsListener;
+import javafx.scene.control.Alert;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -51,8 +52,12 @@ public class KafkaInstance {
     }
 
     public void refreshTopics(){
-        var topics = consumer.listTopics();
-        setTopics(topics);
+        try {
+            var topics = consumer.listTopics();
+            setTopics(topics);
+        } catch (Exception e){
+            System.out.println("");
+        }
     }
 
     private void setTopics(Map<String, List<PartitionInfo>> topics) {
