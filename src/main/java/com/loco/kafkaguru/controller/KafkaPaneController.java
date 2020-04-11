@@ -29,13 +29,10 @@ public class KafkaPaneController implements Initializable, KafkaListener {
   // UI controls
   @FXML
   private SplitPane topicsMessagesPane;
-
   @FXML
   private TreeView<AbstractNode> topicsTree;
-
   @FXML
   private SplitPane messagesSplitPane;
-
   @FXML
   private TableView<MessageModel> messagesTable;
   @FXML
@@ -48,7 +45,6 @@ public class KafkaPaneController implements Initializable, KafkaListener {
   private TableColumn<MessageModel, String> messageBodyColumn;
   @FXML
   private TableColumn<MessageModel, Date> timestampColumn;
-
   @FXML
   private TextArea messageArea;
 
@@ -109,6 +105,19 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     keyColumn.setCellValueFactory(new PropertyValueFactory<>("key"));
     messageBodyColumn.setCellValueFactory(new PropertyValueFactory<>("messageSummary"));
     timestampColumn.setCellValueFactory(new PropertyValueFactory<>("timestamp"));
+
+    messagesTable.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<MessageModel>() {
+      @Override
+      public void changed(ObservableValue<? extends MessageModel> observableValue, MessageModel oldMessage, MessageModel newMessage) {
+        if (newMessage != null) {
+          displayMessages(newMessage);
+        }
+      }
+    });
+  }
+
+  private void displayMessages(MessageModel message) {
+    messageArea.setText(message.getMessageBody());
   }
 
   private void setupTopicsTree() {
