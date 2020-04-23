@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<fx:root prefHeight="400.0" prefWidth="600.0" type="AnchorPane"
-  xmlns="http://javafx.com/javafx/10.0.2-internal"
-  xmlns:fx="http://javafx.com/fxml/1">
+<?import javafx.scene.text.*?>
+
+<fx:root prefHeight="400.0" prefWidth="600.0" type="AnchorPane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
   <children>
     <SplitPane fx:id="topicsMessagesPane" dividerPositions="0.14046822742474915" layoutX="2.0" prefHeight="400.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
       <items>
@@ -24,7 +25,7 @@
                         <TableColumn fx:id="partitionColumn" maxWidth="60.0" prefWidth="58.66665017604828" resizable="false" text="Partition" />
                         <TableColumn fx:id="offsetColumn" maxWidth="100.0" prefWidth="64.66668319702148" text="Offset" />
                         <TableColumn fx:id="keyColumn" maxWidth="200.0" prefWidth="90.66670989990234" text="Key" />
-                        <TableColumn fx:id="messageBodyColumn" maxWidth="1.7976931348623157E308" prefWidth="186.6666717529297" text="Message" />
+                        <TableColumn fx:id="messageSummaryColumn" maxWidth="1.7976931348623157E308" prefWidth="186.6666717529297" text="Message" />
                         <TableColumn fx:id="timestampColumn" maxWidth="300.0" prefWidth="106.00003051757812" text="Time" />
                       </columns>
                     </TableView>
@@ -36,6 +37,9 @@
                       <cursor>
                         <Cursor fx:constant="TEXT" />
                       </cursor>
+                                 <font>
+                                    <Font name="Monospaced Regular" size="12.0" />
+                                 </font>
                     </TextArea>
                   </children>
                 </AnchorPane>

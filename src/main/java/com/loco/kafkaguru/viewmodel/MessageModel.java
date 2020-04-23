@@ -1,123 +1,138 @@
 package com.loco.kafkaguru.viewmodel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Descriptors;
 import javafx.beans.property.*;
-import lombok.Data;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
 
+import com.google.protobuf.DynamicMessage;
+import org.json.JSONObject;
+
 public class MessageModel {
-    private IntegerProperty partition;
-    private LongProperty offset;
-    private StringProperty key;
-    private StringProperty messageBody;
+  private static final int MAX_MESSAGE_SUMMARY_LEN = 100;
+  private IntegerProperty partition;
+  private LongProperty offset;
+  private StringProperty key;
+  private StringProperty messageBody;
 
-    private StringProperty messageSummary;
-    private SimpleObjectProperty<Date> timestamp;
-    private ConsumerRecord<String, String> record;
+  private StringProperty messageSummary;
+  private SimpleObjectProperty<Date> timestamp;
+  private ConsumerRecord<String, String> record;
 
-    private ObjectMapper mapper = new ObjectMapper();
+  public MessageModel(ConsumerRecord<String, String> record) {
+    partition = new SimpleIntegerProperty(record.partition());
+    offset = new SimpleLongProperty(record.offset());
+    key = new SimpleStringProperty(record.key());
+    messageBody = new SimpleStringProperty(format(record.value()));
+    messageSummary = new SimpleStringProperty(summarize(record.value()));
+    timestamp = new SimpleObjectProperty<>(Date.from(Instant.ofEpochMilli(record.timestamp())));
+    this.record = record;
+  }
 
-    public MessageModel(ConsumerRecord<String, String> record) {
-        partition = new SimpleIntegerProperty(record.partition());
-        offset = new SimpleLongProperty(record.offset());
-        key = new SimpleStringProperty(record.key());
-        messageBody = new SimpleStringProperty(format(record.value()));
-        messageSummary = new SimpleStringProperty(summarize(record.value()));
-        timestamp = new SimpleObjectProperty<>(Date.from(Instant.ofEpochMilli(record.timestamp())));
-        this.record = record;
+  private String summarize(String text) {
+    var summary = text == null ? "" : text.substring(0, MAX_MESSAGE_SUMMARY_LEN);
+
+    while (summary.contains("\n") || summary.contains("\r")) {
+      summary = summary.replace("\n", " ").replace("\r", " ");
     }
 
-    private String summarize(String text) {
-        return text == null ? null : text.replace("\n", "\\n");
-    }
+    return summary;
+  }
 
-    private String format(String text) {
-        try {
-            Object json = mapper.readValue(text, Object.class);
-            String indented = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
-            return indented;
-        } catch (IOException e) {
-            return text;
-        }
+  private String format(String text) {
+    try {
+      String indented = new JSONObject(text).toString(4);
+      return indented;
+    } catch (Exception e) {
+      return text;
     }
+  }
 
-    public int getPartition() {
-        return partition.get();
+  public void decode(DynamicMessage msg) {
+    boolean first = true;
+    // Row row = null;
+    for (Descriptors.FieldDescriptor field : msg.getAllFields().keySet()) {
+      var s = field.getFullName();
     }
+    assert !first;
+    // return row;
+  }
 
-    public IntegerProperty partitionProperty() {
-        return partition;
-    }
+  public int getPartition() {
+    return partition.get();
+  }
 
-    public void setPartition(int partition) {
-        this.partition.set(partition);
-    }
+  public IntegerProperty partitionProperty() {
+    return partition;
+  }
 
-    public long getOffset() {
-        return offset.get();
-    }
+  public void setPartition(int partition) {
+    this.partition.set(partition);
+  }
 
-    public LongProperty offsetProperty() {
-        return offset;
-    }
+  public long getOffset() {
+    return offset.get();
+  }
 
-    public void setOffset(long offset) {
-        this.offset.set(offset);
-    }
+  public LongProperty offsetProperty() {
+    return offset;
+  }
 
-    public String getKey() {
-        return key.get();
-    }
+  public void setOffset(long offset) {
+    this.offset.set(offset);
+  }
 
-    public StringProperty keyProperty() {
-        return key;
-    }
+  public String getKey() {
+    return key.get();
+  }
 
-    public void setKey(String key) {
-        this.key.set(key);
-    }
+  public StringProperty keyProperty() {
+    return key;
+  }
 
-    public String getMessageBody() {
-        return messageBody.get();
-    }
+  public void setKey(String key) {
+    this.key.set(key);
+  }
 
-    public StringProperty messageBodyProperty() {
-        return messageBody;
-    }
+  public String getMessageBody() {
+    return messageBody.get();
+  }
 
-    public void setMessageBody(String messageBody) {
-        this.messageBody.set(messageBody);
-    }
+  public StringProperty messageBodyProperty() {
+    return messageBody;
+  }
 
-    public String getMessageSummary() {
-        return messageSummary.get();
-    }
+  public void setMessageBody(String messageBody) {
+    this.messageBody.set(messageBody);
+  }
 
-    public StringProperty messageSummaryProperty() {
-        return messageSummary;
-    }
+  public String getMessageSummary() {
+    return messageSummary.get();
+  }
 
-    public Date getTimestamp() {
-        return timestamp.get();
-    }
+  public StringProperty messageSummaryProperty() {
+    return messageSummary;
+  }
 
-    public SimpleObjectProperty<Date> timestampProperty() {
-        return timestamp;
-    }
+  public Date getTimestamp() {
+    return timestamp.get();
+  }
 
-    public void setTimestamp(Date timestamp) {
-        this.timestamp.set(timestamp);
-    }
+  public SimpleObjectProperty<Date> timestampProperty() {
+    return timestamp;
+  }
 
-    public ConsumerRecord<String, String> getRecord() {
-        return record;
-    }
+  public void setTimestamp(Date timestamp) {
+    this.timestamp.set(timestamp);
+  }
 
-    public void setRecord(ConsumerRecord<String, String> record) {
-        this.record = record;
-    }
+  public ConsumerRecord<String, String> getRecord() {
+    return record;
+  }
+
+  public void setRecord(ConsumerRecord<String, String> record) {
+    this.record = record;
+  }
 }

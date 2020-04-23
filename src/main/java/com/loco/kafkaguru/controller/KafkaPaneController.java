@@ -42,7 +42,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
   @FXML
   private TableColumn<MessageModel, String> keyColumn;
   @FXML
-  private TableColumn<MessageModel, String> messageBodyColumn;
+  private TableColumn<MessageModel, String> messageSummaryColumn;
   @FXML
   private TableColumn<MessageModel, Date> timestampColumn;
   @FXML
@@ -106,21 +106,23 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     partitionColumn.setCellValueFactory(new PropertyValueFactory<>("partition"));
     offsetColumn.setCellValueFactory(new PropertyValueFactory<>("offset"));
     keyColumn.setCellValueFactory(new PropertyValueFactory<>("key"));
-    messageBodyColumn.setCellValueFactory(new PropertyValueFactory<>("messageSummary"));
+    messageSummaryColumn.setCellValueFactory(new PropertyValueFactory<>("messageSummary"));
     timestampColumn.setCellValueFactory(new PropertyValueFactory<>("timestamp"));
 
     messagesTable.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<MessageModel>() {
       @Override
       public void changed(ObservableValue<? extends MessageModel> observableValue, MessageModel oldMessage, MessageModel newMessage) {
-        if (newMessage != null) {
-          displayMessages(newMessage);
-        }
+        displayMessage(newMessage);
       }
     });
   }
 
-  private void displayMessages(MessageModel message) {
-    messageArea.setText(message.getMessageBody());
+  private void displayMessage(MessageModel message) {
+    if (message != null) {
+      messageArea.setText(message.getMessageBody());
+    } else {
+      messageArea.clear();
+    }
   }
 
   private void setupTopicsTree() {
