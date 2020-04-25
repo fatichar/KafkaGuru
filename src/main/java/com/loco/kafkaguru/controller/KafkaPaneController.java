@@ -221,8 +221,8 @@ public class KafkaPaneController implements Initializable, KafkaListener {
       // when current node has changed, existing messages shouldn't be shown.
       // Else keep the existing messages until the new ones arrive.
       if (node != currentTopicNode) { // TODO use equals()?
-        messagesModel.getMessages().clear();
         currentTopicNode = node;
+        messagesModel.setMessages(node.getMessages());
       }
 
       var topicPartitions = getTopicPartitions(node);
@@ -243,30 +243,8 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     var selectionModel = messagesTable.getSelectionModel();
     selectedRow = selectionModel.getSelectedIndex();
     messagesModel.setRecords(records);
+
     selectionModel.select(selectedRow);
-  }
-
-  private List<TopicPartition> getTopicPartitions(AbstractNode selectedNode) {
-    if (selectedNode == null) {
-      return new ArrayList<>();
-    }
-
-    final List<PartitionInfo> partitionInfos = new ArrayList<>();
-    TopicNode topicNode = null;
-    if (selectedNode instanceof TopicNode) {
-      topicNode = (TopicNode) selectedNode;
-      var partitions = topicNode.getPartitions().stream().map(p -> ((PartitionNode) p).getPartition())
-          .collect(Collectors.toList());
-      partitionInfos.addAll(partitions);
-    } else if (selectedNode instanceof PartitionNode) {
-      PartitionNode partitionNode = (PartitionNode) selectedNode;
-      topicNode = (TopicNode) partitionNode.getParent();
-      partitionInfos.add(partitionNode.getPartition());
-    }
-
-    final String topic = topicNode == null ? null : topicNode.getTopic();
-
-    return partitionInfos.stream().map(pi -> new TopicPartition(topic, pi.partition())).collect(Collectors.toList());
   }
 
   private AbstractNode getSelectedNode() {
@@ -306,16 +284,21 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         var selectionModel = topicsTree.getSelectionModel();
         var selectedTreeItem = selectionModel.getSelectedItem();
 
-        // by the time messages arrive for topic/partition, the selected topic/partition
-        // might have changed. If yes, then that has to be notified, because
-        // tree selection events are ignored while messages are being fetched, by
-        // setting
-        // followTreeSelection=false.
+        // by the time messages arrive for topic/partition, the selected
+        // topic/partition might have changed. If yes, then that has to be
+        // notified, because tree selection events are ignored while messages
+        // are being fetched, by setting followTreeSelection=false.
+        saveMessages();
         if (currentTopicNode != selectedTreeItem.getValue()) {
           treeSelectionChanged(selectedTreeItem);
         }
       }
     });
+  }
+
+  private void saveMessages() {
+    var messages = new ArrayList<>(messagesModel.getMessages());
+    currentTopicNode.setMessages(messages);
   }
 
   @Override
@@ -328,6 +311,21 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         }
       });
     }
+  }
+
+  private List<TopicPartition> getTopicPartitions(AbstractNode selectedNode) {
+    List<TopicPartition> partitions = new ArrayList<>();
+
+    if (selectedNode == null) {
+    } else if (selectedNode instanceof TopicNode) {
+      var topicNode = (TopicNode) selectedNode;
+      partitions = topicNode.getTopicPartitions();
+    } else if (selectedNode instanceof PartitionNode) {
+      PartitionNode partitionNode = (PartitionNode) selectedNode;
+      partitions.add(partitionNode.getTopicPartition());
+    }
+
+    return partitions;
   }
 
   private void updateTopicsTree(Map<String, List<PartitionInfo>> newTopics) {

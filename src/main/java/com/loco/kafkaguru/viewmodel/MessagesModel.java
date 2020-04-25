@@ -21,6 +21,9 @@ public class MessagesModel {
   }
 
   public void setMessages(List<MessageModel> messages) {
-    this.messages.addAll(messages);
+    this.messages.clear();
+    if (messages != null) {
+      this.messages.addAll(messages);
+    }
   }
 }
