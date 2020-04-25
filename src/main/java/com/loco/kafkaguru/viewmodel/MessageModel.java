@@ -1,13 +1,11 @@
 package com.loco.kafkaguru.viewmodel;
 
-import com.google.protobuf.Descriptors;
 import javafx.beans.property.*;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.time.Instant;
 import java.util.Date;
 
-import com.google.protobuf.DynamicMessage;
 import org.json.JSONObject;
 
 public class MessageModel {
@@ -32,7 +30,9 @@ public class MessageModel {
   }
 
   private String summarize(String text) {
-    var summary = text == null ? "" : text.substring(0, MAX_MESSAGE_SUMMARY_LEN);
+    var summary = text == null ? ""
+            : text.length() > MAX_MESSAGE_SUMMARY_LEN ? text.substring(0, MAX_MESSAGE_SUMMARY_LEN)
+            : text;
 
     while (summary.contains("\n") || summary.contains("\r")) {
       summary = summary.replace("\n", " ").replace("\r", " ");
@@ -48,16 +48,6 @@ public class MessageModel {
     } catch (Exception e) {
       return text;
     }
-  }
-
-  public void decode(DynamicMessage msg) {
-    boolean first = true;
-    // Row row = null;
-    for (Descriptors.FieldDescriptor field : msg.getAllFields().keySet()) {
-      var s = field.getFullName();
-    }
-    assert !first;
-    // return row;
   }
 
   public int getPartition() {

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
-
-<fx:root prefHeight="400.0" prefWidth="600.0" type="AnchorPane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
+<fx:root prefHeight="488.0" prefWidth="617.0" type="AnchorPane"
+  xmlns="http://javafx.com/javafx/10.0.2-internal"
+  xmlns:fx="http://javafx.com/fxml/1">
   <children>
     <SplitPane fx:id="topicsMessagesPane" dividerPositions="0.14046822742474915" layoutX="2.0" prefHeight="400.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
       <items>
@@ -16,19 +16,32 @@
         </AnchorPane>
         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="318.0" prefWidth="261.0">
           <children>
-            <SplitPane fx:id="messagesSplitPane" dividerPositions="0.2" orientation="VERTICAL" prefHeight="398.0" prefWidth="417.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <SplitPane fx:id="messagesSplitPane" dividerPositions="0.36363636363636365" orientation="VERTICAL" prefHeight="398.0" prefWidth="521.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
               <items>
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                   <children>
-                    <TableView fx:id="messagesTable" maxWidth="1.7976931348623157E308" prefHeight="195.0" prefWidth="417.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                      <columns>
-                        <TableColumn fx:id="partitionColumn" maxWidth="60.0" prefWidth="58.66665017604828" resizable="false" text="Partition" />
-                        <TableColumn fx:id="offsetColumn" maxWidth="100.0" prefWidth="64.66668319702148" text="Offset" />
-                        <TableColumn fx:id="keyColumn" maxWidth="200.0" prefWidth="90.66670989990234" text="Key" />
-                        <TableColumn fx:id="messageSummaryColumn" maxWidth="1.7976931348623157E308" prefWidth="186.6666717529297" text="Message" />
-                        <TableColumn fx:id="timestampColumn" maxWidth="300.0" prefWidth="106.00003051757812" text="Time" />
-                      </columns>
-                    </TableView>
+                    <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                      <children>
+                        <AnchorPane maxWidth="1.7976931348623157E308" VBox.vgrow="NEVER">
+                          <HBox spacing="10.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+                            <children>
+                              <Button fx:id="refreshButton" minWidth="-Infinity" mnemonicParsing="false" text="Refresh" />
+                              <TextField fx:id="filterField" maxWidth="1.7976931348623157E308" minHeight="25" minWidth="100.0" prefColumnCount="100" prefHeight="25.0" />
+                              <Button fx:id="filterButton" maxWidth="100.0" minWidth="-Infinity" mnemonicParsing="false" prefHeight="25.0" text="Filter" />
+                            </children>
+                          </HBox>
+                        </AnchorPane>
+                        <TableView fx:id="messagesTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="643.0" VBox.vgrow="ALWAYS">
+                          <columns>
+                            <TableColumn fx:id="partitionColumn" maxWidth="60.0" prefWidth="58.66665017604828" resizable="false" text="Partition" />
+                            <TableColumn fx:id="offsetColumn" maxWidth="100.0" prefWidth="64.66668319702148" text="Offset" />
+                            <TableColumn fx:id="keyColumn" maxWidth="200.0" prefWidth="90.66670989990234" text="Key" />
+                            <TableColumn fx:id="messageSummaryColumn" maxWidth="1.7976931348623157E308" prefWidth="186.6666717529297" text="Message" />
+                            <TableColumn fx:id="timestampColumn" maxWidth="300.0" prefWidth="106.00003051757812" text="Time" />
+                          </columns>
+                        </TableView>
+                      </children>
+                    </VBox>
                   </children>
                 </AnchorPane>
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
@@ -37,9 +50,9 @@
                       <cursor>
                         <Cursor fx:constant="TEXT" />
                       </cursor>
-                                 <font>
-                                    <Font name="Monospaced Regular" size="12.0" />
-                                 </font>
+                      <font>
+                        <Font name="Monospaced Regular" size="12.0" />
+                      </font>
                     </TextArea>
                   </children>
                 </AnchorPane>
