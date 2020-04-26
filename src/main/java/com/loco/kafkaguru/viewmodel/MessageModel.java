@@ -10,6 +10,7 @@ import org.json.JSONObject;
 
 public class MessageModel {
   private static final int MAX_MESSAGE_SUMMARY_LEN = 100;
+  private IntegerProperty index;
   private IntegerProperty partition;
   private LongProperty offset;
   private StringProperty key;
@@ -19,7 +20,8 @@ public class MessageModel {
   private SimpleObjectProperty<Date> timestamp;
   private ConsumerRecord<String, String> record;
 
-  public MessageModel(ConsumerRecord<String, String> record) {
+  public MessageModel(int index, ConsumerRecord<String, String> record) {
+    this.index = new SimpleIntegerProperty(index);
     partition = new SimpleIntegerProperty(record.partition());
     offset = new SimpleLongProperty(record.offset());
     key = new SimpleStringProperty(record.key());
@@ -48,6 +50,10 @@ public class MessageModel {
     } catch (Exception e) {
       return text;
     }
+  }
+
+  public int getIndex() {
+    return index.get();
   }
 
   public int getPartition() {

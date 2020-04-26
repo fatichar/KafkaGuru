@@ -33,9 +33,10 @@
                         </AnchorPane>
                         <TableView fx:id="messagesTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="643.0" VBox.vgrow="ALWAYS">
                           <columns>
-                            <TableColumn fx:id="partitionColumn" maxWidth="60.0" prefWidth="58.66665017604828" resizable="false" text="Partition" />
-                            <TableColumn fx:id="offsetColumn" maxWidth="100.0" prefWidth="64.66668319702148" text="Offset" />
-                            <TableColumn fx:id="keyColumn" maxWidth="200.0" prefWidth="90.66670989990234" text="Key" />
+                            <TableColumn fx:id="rowNumberColumn" maxWidth="40.0" prefWidth="40" resizable="false" text="Row" />
+                            <TableColumn fx:id="partitionColumn" maxWidth="60.0" prefWidth="60" resizable="false" text="Partition" />
+                            <TableColumn fx:id="offsetColumn" maxWidth="100.0" prefWidth="65" text="Offset" />
+                            <TableColumn fx:id="keyColumn" maxWidth="200.0" prefWidth="90" text="Key" />
                             <TableColumn fx:id="messageSummaryColumn" maxWidth="1.7976931348623157E308" prefWidth="186.6666717529297" text="Message" />
                             <TableColumn fx:id="timestampColumn" maxWidth="300.0" prefWidth="106.00003051757812" text="Time" />
                           </columns>

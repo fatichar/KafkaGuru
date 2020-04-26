@@ -48,6 +48,8 @@ public class KafkaPaneController implements Initializable, KafkaListener {
   @FXML
   private TableView<MessageModel> messagesTable;
   @FXML
+  private TableColumn<MessageModel, Integer> rowNumberColumn;
+  @FXML
   private TableColumn<MessageModel, Integer> partitionColumn;
   @FXML
   private TableColumn<MessageModel, Long> offsetColumn;
@@ -119,19 +121,15 @@ public class KafkaPaneController implements Initializable, KafkaListener {
   private void setupMessagesView() {
     setupMessagesToolbar();
 
+    rowNumberColumn.setCellValueFactory(new PropertyValueFactory<>("index"));
     partitionColumn.setCellValueFactory(new PropertyValueFactory<>("partition"));
     offsetColumn.setCellValueFactory(new PropertyValueFactory<>("offset"));
     keyColumn.setCellValueFactory(new PropertyValueFactory<>("key"));
     messageSummaryColumn.setCellValueFactory(new PropertyValueFactory<>("messageSummary"));
     timestampColumn.setCellValueFactory(new PropertyValueFactory<>("timestamp"));
 
-    messagesTable.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<MessageModel>() {
-      @Override
-      public void changed(ObservableValue<? extends MessageModel> observableValue, MessageModel oldMessage,
-          MessageModel newMessage) {
-        displayMessage(newMessage);
-      }
-    });
+    messagesTable.getSelectionModel().selectedItemProperty()
+        .addListener((observableValue, oldMessage, newMessage) -> displayMessage(newMessage));
   }
 
   private void setupMessagesToolbar() {
@@ -242,7 +240,11 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     int selectedRow = -1;
     var selectionModel = messagesTable.getSelectionModel();
     selectedRow = selectionModel.getSelectedIndex();
-    messagesModel.setRecords(records);
+    final var row = new Object() {
+      public int value = 0;
+    };
+    var messages = records.stream().map(record -> new MessageModel(++row.value, record)).collect(Collectors.toList());
+    messagesModel.setMessages(messages);
 
     selectionModel.select(selectedRow);
   }
