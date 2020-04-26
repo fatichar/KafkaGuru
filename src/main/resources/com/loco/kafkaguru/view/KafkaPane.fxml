@@ -27,7 +27,6 @@
                             <children>
                               <Button fx:id="refreshButton" minWidth="-Infinity" mnemonicParsing="false" text="Refresh" />
                               <TextField fx:id="filterField" maxWidth="1.7976931348623157E308" minHeight="25" minWidth="100.0" prefColumnCount="100" prefHeight="25.0" />
-                              <Button fx:id="filterButton" maxWidth="100.0" minWidth="-Infinity" mnemonicParsing="false" prefHeight="25.0" text="Filter" />
                             </children>
                           </HBox>
                         </AnchorPane>

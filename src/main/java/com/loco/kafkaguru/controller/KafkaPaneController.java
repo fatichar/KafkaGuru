@@ -16,7 +16,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -76,9 +75,11 @@ public class KafkaPaneController implements Initializable, KafkaListener {
 
   private Preferences preferences;
   private boolean followTreeSelection = true;
+
+  // This is the node which is currently associated with the messages table.
   private AbstractNode currentTopicNode;
-  @Getter
-  private boolean loading;
+  boolean currentNodeStale = false;
+  private boolean loading = false;
 
   public KafkaPaneController(Preferences preferences) {
     this.preferences = preferences;
@@ -139,6 +140,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     refreshButton.setOnAction(new EventHandler<ActionEvent>() {
       @Override
       public void handle(ActionEvent actionEvent) {
+        messagesTable.requestFocus();
         refreshMessages();
       }
     });
@@ -211,17 +213,19 @@ public class KafkaPaneController implements Initializable, KafkaListener {
   }
 
   private void treeSelectionChanged(TreeItem<AbstractNode> newItem) {
-    if (newItem == null){
+    if (newItem == null) {
       return;
     }
 
     if (followTreeSelection) {
       var selectedNode = newItem.getValue();
-        messagesModel.setMessages(selectedNode.getMessages());
-        currentTopicNode = selectedNode;
-        if (!isLoading()){
-          fetchMessages(selectedNode);
-        }
+      messagesModel.setMessages(selectedNode.getMessages());
+      currentTopicNode = selectedNode;
+      if (loading) {
+        currentNodeStale = true;
+      } else {
+        fetchMessages(selectedNode);
+      }
     }
   }
 
@@ -229,7 +233,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     setLoadingStatus(true);
     try {
       var topicPartitions = getTopicPartitions(node);
-      kafkaReader.getMessagesAsync(topicPartitions, 50, KafkaPaneController.this);
+      kafkaReader.getMessagesAsync(topicPartitions, 50, KafkaPaneController.this, node);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -237,28 +241,16 @@ public class KafkaPaneController implements Initializable, KafkaListener {
 
   private void setLoadingStatus(boolean isLoading) {
     this.loading = isLoading;
-    messagesTable.requestFocus();
     refreshButton.setDisable(isLoading);
   }
 
-  private void process(List<ConsumerRecord<String, String>> records) {
-    int selectedRow = -1;
-    var selectionModel = messagesTable.getSelectionModel();
-    selectedRow = selectionModel.getSelectedIndex();
+  private static List<MessageModel> createMessages(List<ConsumerRecord<String, String>> records) {
     final var row = new Object() {
       public int value = 0;
     };
     var messages = records.stream().map(record -> new MessageModel(++row.value, record)).collect(Collectors.toList());
-    messagesModel.setMessages(messages);
-
-    selectionModel.select(selectedRow);
+    return messages;
   }
-
-//  private AbstractNode getSelectedNode() {
-//    var selectionModel = topicsTree.getSelectionModel();
-//    var selectedItem = selectionModel.getSelectedItem();
-//    return selectedItem.getValue();
-//  }
 
   @Override
   public void topicsUpdated(Map<String, List<PartitionInfo>> newTopics) {
@@ -281,33 +273,38 @@ public class KafkaPaneController implements Initializable, KafkaListener {
   }
 
   @Override
-  public void messagesReceived(List<ConsumerRecord<String, String>> records) {
+  public void messagesReceived(List<ConsumerRecord<String, String>> records, Object sender) {
     Platform.runLater(new Runnable() {
       @Override
       public void run() {
-        process(records);
-        messagesTable.requestFocus();
-        setLoadingStatus(false);
-        var selectionModel = topicsTree.getSelectionModel();
-        var selectedTreeItem = selectionModel.getSelectedItem();
+        // update the sender node
+        var senderNode = (AbstractNode) sender;
+        var messages = createMessages(records);
+        senderNode.setMessages(messages);
 
-        // by the time messages arrive for topic/partition, the selected
-        // topic/partition might have changed. If yes, then that has to be
-        // notified, because tree selection events are ignored while messages
-        // are being fetched, by setting followTreeSelection=false.
-        saveMessages();
-        var selectedNode = selectedTreeItem.getValue();
-        if (currentTopicNode != selectedNode) {
-          currentTopicNode = selectedNode;
-          fetchMessages(selectedNode);
+        setLoadingStatus(false);
+
+        if (currentTopicNode == senderNode) {
+          updateMessagesTable(messages);
+        } else {
+          if (currentNodeStale) {
+            fetchMessages(currentTopicNode);
+            currentNodeStale = false;
+          } else {
+            new Alert(Alert.AlertType.WARNING, "currentTopicNode != senderNode, and currentNodeStale is false")
+                .showAndWait();
+          }
         }
       }
     });
   }
 
-  private void saveMessages() {
-    var messages = new ArrayList<>(messagesModel.getMessages());
-    currentTopicNode.setMessages(messages);
+  private void updateMessagesTable(List<MessageModel> messages) {
+    var selectionModel = messagesTable.getSelectionModel();
+    int selectedRow = selectionModel.getSelectedIndex();
+    messagesModel.setMessages(messages);
+    selectionModel.select(selectedRow);
+    messagesTable.requestFocus();
   }
 
   @Override

@@ -76,7 +76,7 @@ public class KafkaReader {
     return (int) (po.getEndOffset() - startOffset);
   }
 
-  public void getMessagesAsync(List<TopicPartition> topicPartitions, int i, KafkaListener listener) {
+  public void getMessagesAsync(List<TopicPartition> topicPartitions, int i, KafkaListener listener, Object sender) {
     log.info("In getMessagesAsync()");
     new Thread(new Runnable() {
       @Override
@@ -85,9 +85,9 @@ public class KafkaReader {
         try {
           var messages = fetchMessages(topicPartitions, i);
           log.info("obtained {} messages", messages.size());
-          listener.messagesReceived(messages);
+          listener.messagesReceived(messages, sender);
         } catch (Exception e) {
-          listener.messagesReceived(null);
+          listener.messagesReceived(null, sender);
         }
       }
     }).start();

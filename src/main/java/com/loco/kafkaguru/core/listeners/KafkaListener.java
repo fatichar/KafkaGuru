@@ -8,7 +8,7 @@ import java.util.Map;
 
 public interface KafkaListener {
     public void topicsUpdated(Map<String, List<PartitionInfo>> topics);
-    public void messagesReceived(List<ConsumerRecord<String, String>> records);
+    public void messagesReceived(List<ConsumerRecord<String, String>> records, Object sender);
 
     void connected(boolean really);
 }
