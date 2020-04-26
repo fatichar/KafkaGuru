@@ -10,15 +10,15 @@ import org.json.JSONObject;
 
 public class MessageModel {
   private static final int MAX_MESSAGE_SUMMARY_LEN = 100;
+
   private IntegerProperty index;
   private IntegerProperty partition;
   private LongProperty offset;
   private StringProperty key;
+  private StringProperty messageSummary;
   private StringProperty messageBody;
 
-  private StringProperty messageSummary;
   private SimpleObjectProperty<Date> timestamp;
-  private ConsumerRecord<String, String> record;
 
   public MessageModel(int index, ConsumerRecord<String, String> record) {
     this.index = new SimpleIntegerProperty(index);
@@ -28,7 +28,6 @@ public class MessageModel {
     messageBody = new SimpleStringProperty(format(record.value()));
     messageSummary = new SimpleStringProperty(summarize(record.value()));
     timestamp = new SimpleObjectProperty<>(Date.from(Instant.ofEpochMilli(record.timestamp())));
-    this.record = record;
   }
 
   private String summarize(String text) {
@@ -60,75 +59,23 @@ public class MessageModel {
     return partition.get();
   }
 
-  public IntegerProperty partitionProperty() {
-    return partition;
-  }
-
-  public void setPartition(int partition) {
-    this.partition.set(partition);
-  }
-
   public long getOffset() {
     return offset.get();
-  }
-
-  public LongProperty offsetProperty() {
-    return offset;
-  }
-
-  public void setOffset(long offset) {
-    this.offset.set(offset);
   }
 
   public String getKey() {
     return key.get();
   }
 
-  public StringProperty keyProperty() {
-    return key;
-  }
-
-  public void setKey(String key) {
-    this.key.set(key);
-  }
-
-  public String getMessageBody() {
-    return messageBody.get();
-  }
-
-  public StringProperty messageBodyProperty() {
-    return messageBody;
-  }
-
-  public void setMessageBody(String messageBody) {
-    this.messageBody.set(messageBody);
-  }
-
   public String getMessageSummary() {
     return messageSummary.get();
-  }
-
-  public StringProperty messageSummaryProperty() {
-    return messageSummary;
   }
 
   public Date getTimestamp() {
     return timestamp.get();
   }
 
-  public SimpleObjectProperty<Date> timestampProperty() {
-    return timestamp;
-  }
-
-  public void setTimestamp(Date timestamp) {
-    this.timestamp.set(timestamp);
-  }
-
-  public ConsumerRecord<String, String> getRecord() {
-    return record;
-  }
-
-  public void setRecord(ConsumerRecord<String, String> record) {
-    this.record = record;
+  public String getMessageBody() {
+    return messageBody.get();
   }
 }
