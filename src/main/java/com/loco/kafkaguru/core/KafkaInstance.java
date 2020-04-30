@@ -18,8 +18,10 @@ import java.util.*;
 
 @Log4j2
 public class KafkaInstance {
-    @Getter private String name;
-    @Getter private String url;
+    @Getter
+    private String name;
+    @Getter
+    private String url;
     private Properties properties;
     private KafkaConsumer<String, String> consumer;
 
@@ -68,7 +70,7 @@ public class KafkaInstance {
         this.properties.putIfAbsent("group.id", "kafka-tool");
         this.properties.putIfAbsent("auto.offset.reset", "earliest");
         this.properties.putIfAbsent("enable.auto.commit", "false");
-        this.properties.putIfAbsent("max.poll.records", 1000);
+        this.properties.putIfAbsent("max.poll.records", 2000);
         this.properties.putIfAbsent("key.deserializer", StringDeserializer.class);
         this.properties.putIfAbsent("value.deserializer", StringDeserializer.class);
 
@@ -76,27 +78,29 @@ public class KafkaInstance {
     }
 
     public void connectAsync(KafkaListener listener) {
-        new Thread(
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    connect();
-                                    listener.connected(true);
-                                } catch (KafkaException | UnknownHostException e) {
-                                    log.error("Failed to connect to kafka ", e);
-                                    listener.connected(false);
-                                }
-                                try {
-                                    var topics = refreshTopics();
-                                    listener.topicsUpdated(topics);
-                                } catch (KafkaException e) {
-                                    log.error("Failed to fetch topics from kafka ", e);
-                                    listener.topicsUpdated(null);
-                                }
-                            }
-                        })
-                .start();
+        log.error("Starting connection thread");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                log.error("Started connection thread");
+                try {
+                    connect();
+                    listener.connected(true);
+                } catch (KafkaException | UnknownHostException e) {
+                    log.error("Failed to connect to kafka ", e);
+                    listener.connected(false);
+                }
+                try {
+                    log.error("Obtaining topics from kafka ");
+                    var topics = refreshTopics();
+                    listener.topicsUpdated(topics);
+                    log.error("Obtained topics from kafka ");
+                } catch (KafkaException e) {
+                    log.error("Failed to fetch topics from kafka for {}", url, e);
+                    listener.topicsUpdated(null);
+                }
+            }
+        }).start();
     }
 
     public void assign(List<TopicPartition> topicPartitions) {

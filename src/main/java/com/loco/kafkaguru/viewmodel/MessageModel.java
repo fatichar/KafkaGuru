@@ -43,6 +43,10 @@ public class MessageModel {
   }
 
   private String format(String text) {
+    if (text == null){
+      return "";
+    }
+
     try {
       String indented = new JSONObject(text).toString(4);
       return indented;

@@ -1,66 +1,110 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import java.lang.*?>
+<?import javafx.collections.*?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
-<fx:root prefHeight="488.0" prefWidth="617.0" type="AnchorPane"
-  xmlns="http://javafx.com/javafx/10.0.2-internal"
-  xmlns:fx="http://javafx.com/fxml/1">
-  <children>
-    <SplitPane fx:id="topicsMessagesPane" dividerPositions="0.14046822742474915" layoutX="2.0" prefHeight="400.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-      <items>
-        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
-          <children>
-            <TreeView fx:id="topicsTree" layoutX="-1.0" layoutY="-2.0" prefHeight="400.0" prefWidth="189.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
-          </children>
-        </AnchorPane>
-        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="318.0" prefWidth="261.0">
-          <children>
-            <SplitPane fx:id="messagesSplitPane" dividerPositions="0.36363636363636365" orientation="VERTICAL" prefHeight="398.0" prefWidth="521.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-              <items>
-                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
-                  <children>
-                    <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                      <children>
-                        <AnchorPane maxWidth="1.7976931348623157E308" VBox.vgrow="NEVER">
-                          <HBox spacing="10.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+<fx:root prefHeight="492.0" prefWidth="743.0" type="AnchorPane"
+    xmlns="http://javafx.com/javafx/10.0.2-internal"
+    xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <SplitPane fx:id="topicsMessagesPane" dividerPositions="0.14046822742474915" layoutX="2.0" prefHeight="400.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <items>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                    <children>
+                        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                             <children>
-                              <Button fx:id="refreshButton" minWidth="-Infinity" mnemonicParsing="false" text="Refresh" />
-                              <TextField fx:id="filterField" maxWidth="1.7976931348623157E308" minHeight="25" minWidth="100.0" prefColumnCount="100" prefHeight="25.0" />
+                                <TitledPane maxHeight="1.7976931348623157E308" text="Topics" VBox.vgrow="ALWAYS">
+                                    <content>
+                                        <TreeView fx:id="topicsTree" prefHeight="400.0" prefWidth="189.0" />
+                                    </content>
+                                </TitledPane>
+                                <TitledPane minHeight="-Infinity" text="Preferences" VBox.vgrow="NEVER">
+                                    <content>
+                                        <ScrollPane vbarPolicy="NEVER">
+                                            <content>
+                                                <VBox maxWidth="1.7976931348623157E308" minWidth="-Infinity" spacing="10.0">
+                                                    <CheckBox fx:id="followSelectionCheck" text="Follow topic selection" />
+                                                    <HBox minWidth="-Infinity" spacing="10.0" VBox.vgrow="NEVER">
+                                                        <Label minWidth="-Infinity" text="Message count" HBox.hgrow="NEVER" />
+                                                        <ComboBox fx:id="messageCountBox" editable="true" minWidth="-Infinity" prefWidth="75.0" HBox.hgrow="NEVER">
+                                                            <items>
+                                                                <FXCollections fx:factory="observableArrayList">
+                                                                    <String fx:value="10" />
+                                                                    <String fx:value="25" />
+                                                                    <String fx:value="50" />
+                                                                    <String fx:value="100" />
+                                                                    <String fx:value="250" />
+                                                                    <String fx:value="500" />
+                                                                    <String fx:value="1000" />
+                                                                </FXCollections>
+                                                            </items>
+                                                        </ComboBox>
+                                                    </HBox>
+                                                </VBox>
+                                            </content>
+                                            <padding>
+                                                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                            </padding>
+                                        </ScrollPane>
+                                    </content>
+                                </TitledPane>
                             </children>
-                          </HBox>
-                        </AnchorPane>
-                        <TableView fx:id="messagesTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="643.0" VBox.vgrow="ALWAYS">
-                          <columns>
-                            <TableColumn fx:id="rowNumberColumn" maxWidth="40.0" prefWidth="40" resizable="false" text="Row" />
-                            <TableColumn fx:id="partitionColumn" maxWidth="60.0" prefWidth="60" resizable="false" text="Partition" />
-                            <TableColumn fx:id="offsetColumn" maxWidth="100.0" prefWidth="65" text="Offset" />
-                            <TableColumn fx:id="keyColumn" maxWidth="200.0" prefWidth="90" text="Key" />
-                            <TableColumn fx:id="messageSummaryColumn" maxWidth="1.7976931348623157E308" prefWidth="186.6666717529297" text="Message" />
-                            <TableColumn fx:id="timestampColumn" maxWidth="300.0" prefWidth="106.00003051757812" text="Time" />
-                          </columns>
-                        </TableView>
-                      </children>
-                    </VBox>
-                  </children>
+                        </VBox>
+                    </children>
                 </AnchorPane>
-                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
-                  <children>
-                    <TextArea fx:id="messageArea" editable="false" layoutX="95.0" layoutY="-19.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                      <cursor>
-                        <Cursor fx:constant="TEXT" />
-                      </cursor>
-                      <font>
-                        <Font name="Monospaced Regular" size="12.0" />
-                      </font>
-                    </TextArea>
-                  </children>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="318.0" prefWidth="261.0">
+                    <children>
+                        <SplitPane fx:id="messagesSplitPane" dividerPositions="0.36363636363636365" orientation="VERTICAL" prefHeight="398.0" prefWidth="521.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                            <items>
+                                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+                                    <children>
+                                        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                            <children>
+                                                <AnchorPane maxWidth="1.7976931348623157E308" VBox.vgrow="NEVER">
+                                                    <HBox spacing="10.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+                                                        <children>
+                                                            <Button fx:id="refreshButton" minWidth="-Infinity" mnemonicParsing="false" prefHeight="25.0" text="Refresh" />
+                                                            <Label minHeight="-Infinity" minWidth="-Infinity" prefHeight="25.0" text="Message contains" HBox.hgrow="NEVER" />
+                                                            <TextField fx:id="includeField" maxWidth="1.7976931348623157E308" minHeight="25" minWidth="100.0" prefColumnCount="100" prefHeight="25.0" />
+                                                            <Label minHeight="-Infinity" minWidth="-Infinity" prefHeight="25.0" text="but not" HBox.hgrow="NEVER" />
+                                                            <TextField fx:id="excludeField" maxWidth="1.7976931348623157E308" minHeight="25" minWidth="100.0" prefColumnCount="100" prefHeight="25.0" />
+                                                        </children>
+                                                    </HBox>
+                                                </AnchorPane>
+                                                <TableView fx:id="messagesTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="643.0" VBox.vgrow="ALWAYS">
+                                                    <columns>
+                                                        <TableColumn fx:id="rowNumberColumn" maxWidth="40.0" prefWidth="40" resizable="false" text="Row" />
+                                                        <TableColumn fx:id="partitionColumn" maxWidth="60.0" prefWidth="60" resizable="false" text="Partition" />
+                                                        <TableColumn fx:id="offsetColumn" maxWidth="100.0" prefWidth="65" text="Offset" />
+                                                        <TableColumn fx:id="keyColumn" maxWidth="200.0" prefWidth="90" text="Key" />
+                                                        <TableColumn fx:id="messageSummaryColumn" maxWidth="1.7976931348623157E308" prefWidth="186.6666717529297" text="Message" />
+                                                        <TableColumn fx:id="timestampColumn" maxWidth="300.0" prefWidth="106.00003051757812" text="Time" />
+                                                    </columns>
+                                                </TableView>
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </AnchorPane>
+                                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+                                    <children>
+                                        <TextArea fx:id="messageArea" editable="false" layoutX="95.0" layoutY="-19.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                            <cursor>
+                                                <Cursor fx:constant="TEXT" />
+                                            </cursor>
+                                            <font>
+                                                <Font name="Monospaced Regular" size="12.0" />
+                                            </font>
+                                        </TextArea>
+                                    </children>
+                                </AnchorPane>
+                            </items>
+                        </SplitPane>
+                    </children>
                 </AnchorPane>
-              </items>
-            </SplitPane>
-          </children>
-        </AnchorPane>
-      </items>
-    </SplitPane>
-  </children>
+            </items>
+        </SplitPane>
+    </children>
 </fx:root>

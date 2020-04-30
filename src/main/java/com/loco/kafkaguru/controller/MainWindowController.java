@@ -18,18 +18,19 @@ import java.util.stream.Collectors;
 
 @Getter
 @Setter
-public class MainWindowController implements Initializable {
-    @FXML private Button newTabButton;
+public class MainWindowController implements Initializable, ControllerListener {
+    @FXML
+    private Button newTabButton;
 
-    @FXML private TabPane tabPane;
+    @FXML
+    private TabPane tabPane;
 
     private Preferences preferences;
-    private List<KafkaPaneController> childControllers;
+    private Map<KafkaPaneController, Tab> childControllers = new HashMap<>();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         preferences = readPreferences();
-        setPreferences(preferences);
         updateUI();
     }
 
@@ -42,24 +43,10 @@ public class MainWindowController implements Initializable {
         return Preferences.userRoot().node(this.getClass().getName());
     }
 
-    /** Sets current preferences for the application. */
-    private void setPreferences(Preferences preferences) {
-        try {
-            var childrenNames = preferences.childrenNames();
-            //            childControllers = new ArrayList<>();
-            childControllers =
-                    Arrays.stream(childrenNames)
-                            .map(createChild(preferences))
-                            .collect(Collectors.toUnmodifiableList());
-        } catch (BackingStoreException e) {
-            // TODO handle error
-        }
-    }
-
     private Function<String, KafkaPaneController> createChild(Preferences preferences) {
         return childName -> {
             var childNode = preferences.node(childName);
-            return new KafkaPaneController(childNode);
+            return new KafkaPaneController((ControllerListener) this, childNode);
         };
     }
 
@@ -74,13 +61,21 @@ public class MainWindowController implements Initializable {
             preferences.flush();
         } catch (BackingStoreException e) {
             e.printStackTrace();
-            new javafx.scene.control.Alert(Alert.AlertType.ERROR, "Failed to save preferences")
-                    .showAndWait();
+            new javafx.scene.control.Alert(Alert.AlertType.ERROR, "Failed to save preferences").showAndWait();
         }
     }
 
     private void updateUI() {
-        childControllers.stream().forEach(this::createTab);
+        try {
+            var childrenNames = preferences.childrenNames();
+
+            var controllers = Arrays.stream(childrenNames).map(createChild(preferences))
+                    .collect(Collectors.toUnmodifiableList());
+
+            controllers.forEach(controller -> childControllers.put(controller, createTab(controller)));
+        } catch (BackingStoreException e) {
+            // TODO handle error
+        }
     }
 
     public void onNewConnection(ActionEvent actionEvent) {
@@ -92,7 +87,7 @@ public class MainWindowController implements Initializable {
         childPreferences.put("name", cluster.getName());
         childPreferences.put("url", cluster.getUrl());
 
-        var controller = new KafkaPaneController(childPreferences);
+        var controller = new KafkaPaneController(this, childPreferences);
         Tab newTab = createTab(controller);
         tabPane.getSelectionModel().select(newTab);
 
@@ -121,7 +116,14 @@ public class MainWindowController implements Initializable {
         var kafkaName = inputDialog.getEditor().getText();
 
         return new KafkaClusterInfo(kafkaName, kafkaUrl);
-        //        return new KafkaClusterInfo(
-        //                "Dev Sandbox", "ec2-54-226-137-43.compute-1.amazonaws.com:9092");
+    }
+
+    @Override
+    public void destroy(KafkaPaneController controller) {
+        var tab = childControllers.getOrDefault(controller, null);
+        if (tab != null) {
+            tabPane.getTabs().remove(tab);
+            childControllers.remove(controller);
+        }
     }
 }
