@@ -9,15 +9,19 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 public class ClusterNode implements AbstractNode {
-  private KafkaInstance kafkaInstance;
-  private List<MessageModel> messages;
+    private KafkaInstance kafkaInstance;
+    private List<MessageModel> messages;
 
-  public ClusterNode(KafkaInstance kafkaInstance) {
-    this(kafkaInstance, null);
-  }
+    public ClusterNode(KafkaInstance kafkaInstance) {
+        this(kafkaInstance, null);
+    }
 
-  @Override
-  public String toString() {
-    return kafkaInstance.getName();
-  }
+    @Override
+    public String toString() {
+        return kafkaInstance.getName();
+    }
+
+    @Override
+    public void addMessages(List<MessageModel> messages) {
+    }
 }

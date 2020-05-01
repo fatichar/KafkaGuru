@@ -6,7 +6,6 @@ import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.TopicPartition;
 
 import java.time.Duration;
@@ -18,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @Getter
 public class KafkaReader {
     private KafkaInstance kafkaInstance;
-    private long minWait = 1000;
+    private long maxWait = 10000;
     private long waitPerMessage = 10;
 
     public KafkaReader(@NonNull String name, @NonNull String url) {
@@ -29,14 +28,13 @@ public class KafkaReader {
         this.kafkaInstance = instance;
     }
 
-    private List<ConsumerRecord<String, String>> fetchMessages(@NonNull List<TopicPartition> topicPartitions,
-            int maxMessageCount, long fetchFrom) {
+    private void fetchMessages(@NonNull List<TopicPartition> topicPartitions, int maxMessageCount, long fetchFrom,
+            KafkaListener listener, Object sender) {
         log.info("Getting messages");
 
-        var topicMessages = new ArrayList<ConsumerRecord<String, String>>();
         if (topicPartitions.isEmpty()) {
             log.info("topicPartitions is empty");
-            return topicMessages;
+            return;
         }
 
         log.info("Obtaining offsets");
@@ -50,25 +48,37 @@ public class KafkaReader {
         synchronized (kafkaInstance) {
             // TODO ensure that all partitions are from the same topic?
             kafkaInstance.assign(topicPartitions);
-
             seek(partitionOffsets, fetchFrom, maxMessageCount);
 
-            var wait = minWait + maxMessageCount * waitPerMessage;
-            var batchSize = 0;
-            do {
-                ConsumerRecords<String, String> batch = kafkaInstance.poll(Duration.ofMillis(wait));
-                batchSize = batch.count();
+            var more = true;
+            var totalCount = 0;
+            for (int batchNumber = 1; more; ++batchNumber) {
+                var batch = getNextBatch(maxMessageCount - totalCount, maxWait);
 
-                for (var iterator = batch.iterator(); iterator.hasNext() && topicMessages.size() < maxMessageCount;) {
-                    ConsumerRecord<String, String> record = iterator.next();
-                    topicMessages.add(record);
-                }
-            } while (topicMessages.size() < maxMessageCount && batchSize > 0);
+                var batchSize = batch.size();
+                totalCount += batchSize;
+                log.info("obtained {} messages, total {}", batchSize, totalCount);
 
-            log.info("Got {} messages from topic: {} in {} seconds.", topicMessages.size(), topic,
+                more = (totalCount < maxMessageCount) && (batchSize > 0);
+                listener.messagesReceived(batch, sender, batchNumber, more);
+            }
+
+            log.info("Finished reading {} messages from topic: {} in {} seconds.", totalCount, topic,
                     stopWatch.getTime(TimeUnit.SECONDS));
         }
-        return topicMessages;
+    }
+
+    private ArrayList<ConsumerRecord<String, String>> getNextBatch(int maxMessageCount, long wait) {
+        var batch = kafkaInstance.poll(Duration.ofMillis(wait));
+
+        var batchMessages = new ArrayList<ConsumerRecord<String, String>>();
+        for (var record : batch) {
+            if (batchMessages.size() == maxMessageCount) {
+                break;
+            }
+            batchMessages.add(record);
+        }
+        return batchMessages;
     }
 
     private void seek(List<PartitionOffset> partitionOffsets, long fetchFrom, int maxMessageCount) {
@@ -123,11 +133,9 @@ public class KafkaReader {
             public void run() {
                 log.info("calling getMessages()");
                 try {
-                    var messages = fetchMessages(topicPartitions, limit, fetchFrom);
-                    log.info("obtained {} messages", messages.size());
-                    listener.messagesReceived(messages, sender);
+                    fetchMessages(topicPartitions, limit, fetchFrom, listener, sender);
                 } catch (Exception e) {
-                    listener.messagesReceived(null, sender);
+                    listener.messagesReceived(null, sender, 0, false);
                 }
             }
         }).start();

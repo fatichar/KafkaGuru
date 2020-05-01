@@ -150,7 +150,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         cursorBox.valueProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observableValue, String oldValue, String newValue) {
-                switch (newValue){
+                switch (newValue) {
                     case "Beginning":
                         fetchFrom = 0;
                         break;
@@ -163,7 +163,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
                         } catch (NumberFormatException e) {
                             cursorBox.valueProperty().set(oldValue);
                         }
-                    break;
+                        break;
                 }
             }
         });
@@ -333,7 +333,8 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         setLoadingStatus(true);
         try {
             var topicPartitions = getTopicPartitions(node);
-            kafkaReader.getMessagesAsync(topicPartitions, maxMessagesToFetch, fetchFrom, KafkaPaneController.this, node);
+            kafkaReader.getMessagesAsync(topicPartitions, maxMessagesToFetch, fetchFrom, KafkaPaneController.this,
+                    node);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -344,9 +345,9 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         refreshButton.setDisable(isLoading);
     }
 
-    private static List<MessageModel> createMessages(List<ConsumerRecord<String, String>> records) {
+    private static List<MessageModel> createMessages(int startRow, List<ConsumerRecord<String, String>> records) {
         final var row = new Object() {
-            public int value = 0;
+            public int value = startRow;
         };
         var messages = records.stream().map(record -> new MessageModel(++row.value, record))
                 .collect(Collectors.toList());
@@ -374,19 +375,29 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     }
 
     @Override
-    public void messagesReceived(List<ConsumerRecord<String, String>> records, Object sender) {
+    public void messagesReceived(List<ConsumerRecord<String, String>> records, Object sender, int batchNumber,
+            boolean moreToCome) {
+        log.info("Received {} messages", records.size());
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
+                log.info("Processing {} messages", records.size());
                 // update the sender node
                 var senderNode = (AbstractNode) sender;
-                var messages = createMessages(records);
-                senderNode.setMessages(messages);
+                if (batchNumber == 1) {
+                    var messages = createMessages(0, records);
+                    senderNode.setMessages(messages);
+                } else {
+                    var messages = createMessages(senderNode.getMessages().size(), records);
+                    senderNode.addMessages(messages);
+                }
+                log.info("Added {} messages to the node", records.size());
 
-                setLoadingStatus(false);
+                setLoadingStatus(moreToCome);
 
                 if (currentTopicNode == senderNode) {
-                    updateMessagesTable(messages);
+                    updateMessagesTable();
+                    log.info("Added {} messages to the table", records.size());
                 } else {
                     if (currentNodeStale) {
                         fetchMessages(currentTopicNode);
@@ -400,10 +411,10 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         });
     }
 
-    private void updateMessagesTable(List<MessageModel> messages) {
+    private void updateMessagesTable() {
         var selectionModel = messagesTable.getSelectionModel();
         int selectedRow = selectionModel.getSelectedIndex();
-        messagesModel.setMessages(messages);
+        messagesModel.setMessages(currentTopicNode.getMessages());
         selectionModel.select(selectedRow);
         messagesTable.requestFocus();
     }

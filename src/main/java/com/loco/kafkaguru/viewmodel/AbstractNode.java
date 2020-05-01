@@ -3,7 +3,9 @@ package com.loco.kafkaguru.viewmodel;
 import java.util.List;
 
 public interface AbstractNode {
-  List<MessageModel> getMessages();
+    List<MessageModel> getMessages();
 
-  void setMessages(List<MessageModel> messages);
+    void setMessages(List<MessageModel> messages);
+
+    void addMessages(List<MessageModel> messages);
 }

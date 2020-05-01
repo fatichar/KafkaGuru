@@ -12,77 +12,91 @@ import java.util.stream.Collectors;
 
 @Data
 public class TopicNode implements AbstractNode {
-  private AbstractNode parent;
-  private String topic;
-  List<PartitionNode> partitions;
+    private AbstractNode parent;
+    private String topic;
+    List<PartitionNode> partitions;
 
-  private List<MessageModel> messages;
+    private List<MessageModel> messages;
 
-  public TopicNode(AbstractNode parent, String topic, List<PartitionInfo> partitions) {
-    this.parent = parent;
-    this.topic = topic;
-    this.partitions = partitions.stream().map(p -> new PartitionNode(this, p)).collect(Collectors.toList());
-  }
-
-  public void setMessages(List<MessageModel> messages) {
-    this.messages = messages;
-    if (messages != null) {
-      partitions.forEach(p -> {
-        var subMessages = messages.stream().filter(m -> m.getPartition() == p.getPartition().partition())
-            .collect(Collectors.toList());
-        p.setMessages(subMessages);
-      });
+    public TopicNode(AbstractNode parent, String topic, List<PartitionInfo> partitions) {
+        this.parent = parent;
+        this.topic = topic;
+        this.partitions = partitions.stream().map(p -> new PartitionNode(this, p)).collect(Collectors.toList());
     }
-  }
 
-  public List<TopicPartition> getTopicPartitions() {
-    return partitions.stream().map(p -> p.getTopicPartition()).collect(Collectors.toList());
-  }
-
-  public String toString() {
-    return topic;
-  }
-
-  public boolean equals(Object other) {
-    TopicNode otherNode = (TopicNode) other;
-    if (otherNode == null) {
-      return false;
+    public void setMessages(List<MessageModel> messages) {
+        this.messages = messages;
+        // if (messages != null) {
+        // partitions.forEach(p -> {
+        // var subMessages = messages.stream().filter(m -> m.getPartition() ==
+        // p.getPartition().partition())
+        // .collect(Collectors.toList());
+        // p.setMessages(subMessages);
+        // });
+        // }
     }
-    if (!StringUtils.equals(topic, otherNode.getTopic())) {
-      return false;
+
+    @Override
+    public void addMessages(List<MessageModel> messages) {
+        this.messages.addAll(messages);
+        // if (messages != null) {
+        // partitions.forEach(p -> {
+        // var subMessages = messages.stream().filter(m -> m.getPartition() ==
+        // p.getPartition().partition())
+        // .collect(Collectors.toList());
+        // p.addMessages(subMessages);
+        // });
+        // }
     }
-    return true;
-  }
 
-  public int hashCode() {
-    return topic.hashCode();
-  }
+    public List<TopicPartition> getTopicPartitions() {
+        return partitions.stream().map(p -> p.getTopicPartition()).collect(Collectors.toList());
+    }
 
-  public AbstractNode getChildAt(int childIndex) {
-    return partitions.get(childIndex);
-  }
+    public String toString() {
+        return topic;
+    }
 
-  public int getChildCount() {
-    return partitions.size();
-  }
+    public boolean equals(Object other) {
+        TopicNode otherNode = (TopicNode) other;
+        if (otherNode == null) {
+            return false;
+        }
+        if (!StringUtils.equals(topic, otherNode.getTopic())) {
+            return false;
+        }
+        return true;
+    }
 
-  public AbstractNode getParent() {
-    return parent;
-  }
+    public int hashCode() {
+        return topic.hashCode();
+    }
 
-  public int getIndex(AbstractNode node) {
-    return partitions.indexOf(node);
-  }
+    public AbstractNode getChildAt(int childIndex) {
+        return partitions.get(childIndex);
+    }
 
-  public boolean getAllowsChildren() {
-    return true;
-  }
+    public int getChildCount() {
+        return partitions.size();
+    }
 
-  public boolean isLeaf() {
-    return getChildCount() == 0;
-  }
+    public AbstractNode getParent() {
+        return parent;
+    }
 
-  public Enumeration children() {
-    return Collections.enumeration(partitions);
-  }
+    public int getIndex(AbstractNode node) {
+        return partitions.indexOf(node);
+    }
+
+    public boolean getAllowsChildren() {
+        return true;
+    }
+
+    public boolean isLeaf() {
+        return getChildCount() == 0;
+    }
+
+    public Enumeration children() {
+        return Collections.enumeration(partitions);
+    }
 }
