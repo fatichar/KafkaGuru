@@ -7,10 +7,7 @@ import com.loco.kafkaguru.model.KafkaClusterInfo;
 import com.loco.kafkaguru.viewmodel.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.transformation.FilteredList;
@@ -39,12 +36,21 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     // UI controls
     @FXML
     private SplitPane topicsMessagesPane;
+
+    @FXML
+    private Accordion topicsAccordian;
+    @FXML
+    private TitledPane topicsPane;
+    @FXML
+    private TitledPane preferencesPane;
     @FXML
     private TreeView<AbstractNode> topicsTree;
     @FXML
     private CheckBox followSelectionCheck;
     @FXML
     private ComboBox<String> messageCountBox;
+    @FXML
+    private ComboBox<String> cursorBox;
 
     // messages toolbar
     @FXML
@@ -92,7 +98,9 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     boolean currentNodeStale = false;
     private boolean loading = false;
     private int maxMessagesToFetch = 50;
+    private long fetchFrom = -1;
     private boolean connected;
+    private DoubleProperty topicMessageDividerPos;
 
     public KafkaPaneController(ControllerListener parent, Preferences preferences) {
         this.parent = parent;
@@ -120,12 +128,48 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         setupMessagesView();
         setupPreferencesView();
 
+        topicsAccordian.setExpandedPane(topicsPane);
+
+        topicMessageDividerPos = topicsMessagesPane.getDividers().get(0).positionProperty();
+        var lastDividerPos = preferences.getDouble("topic_message_divider", 0.1);
+        topicMessageDividerPos.set(lastDividerPos);
+
         // TODO report connection error
         kafkaInstance.connectAsync(this);
     }
 
     private void setupPreferencesView() {
         followSelectionCheck.selectedProperty().bindBidirectional(followTreeSelection);
+
+        setupMessageCountBox();
+        setupCursorBox();
+    }
+
+    private void setupCursorBox() {
+        this.cursorBox.setValue("End");
+        cursorBox.valueProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observableValue, String oldValue, String newValue) {
+                switch (newValue){
+                    case "Beginning":
+                        fetchFrom = 0;
+                        break;
+                    case "End":
+                        fetchFrom = -1;
+                        break;
+                    default:
+                        try {
+                            fetchFrom = Integer.parseInt(newValue);
+                        } catch (NumberFormatException e) {
+                            cursorBox.valueProperty().set(oldValue);
+                        }
+                    break;
+                }
+            }
+        });
+    }
+
+    private void setupMessageCountBox() {
         messageCountBox.setValue("" + maxMessagesToFetch);
         messageCountBox.valueProperty().addListener(new ChangeListener<String>() {
             @Override
@@ -133,7 +177,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
                 try {
                     maxMessagesToFetch = Integer.parseInt(newValue);
                 } catch (NumberFormatException e) {
-                    maxMessagesToFetch = 50;
+                    messageCountBox.valueProperty().set(oldValue);
                 }
             }
         });
@@ -289,7 +333,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         setLoadingStatus(true);
         try {
             var topicPartitions = getTopicPartitions(node);
-            kafkaReader.getMessagesAsync(topicPartitions, maxMessagesToFetch, KafkaPaneController.this, node);
+            kafkaReader.getMessagesAsync(topicPartitions, maxMessagesToFetch, fetchFrom, KafkaPaneController.this, node);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -394,7 +438,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     }
 
     private void updateTopicsTree(Map<String, List<PartitionInfo>> newTopics) {
-
+        topicMessageDividerPos.removeListener(this::topicMessageDividerChanged);
         var rootNode = topicsTree.getRoot();
         topics = newTopics;
         rootNode.getChildren().clear();
@@ -408,6 +452,10 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         if (lastSelectedTreeItem != null) {
             topicsTree.getSelectionModel().select(lastSelectedTreeItem);
         }
+
+        var lastDividerPos = preferences.getDouble("topic_message_divider", 0.1);
+        topicMessageDividerPos.set(lastDividerPos);
+        topicMessageDividerPos.addListener(this::topicMessageDividerChanged);
     }
 
     private TreeItem<AbstractNode> getLastSelectedTreeItem(TreeItem<AbstractNode> rootNode) {
@@ -457,5 +505,10 @@ public class KafkaPaneController implements Initializable, KafkaListener {
 
     private TreeItem<AbstractNode> createPartitionNode(TopicNode topicNode, PartitionInfo partitionInfo) {
         return new TreeItem<>(new PartitionNode(topicNode, partitionInfo));
+    }
+
+    private void topicMessageDividerChanged(ObservableValue<? extends Number> observable, Number oldValue,
+            Number newValue) {
+        preferences.putDouble("topic_message_divider", newValue.doubleValue());
     }
 }

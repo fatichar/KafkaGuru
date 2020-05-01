@@ -18,8 +18,8 @@ import java.util.concurrent.TimeUnit;
 @Getter
 public class KafkaReader {
     private KafkaInstance kafkaInstance;
-    private long minWait = 5000;
-    private long waitPerMessage = 20;
+    private long minWait = 1000;
+    private long waitPerMessage = 10;
 
     public KafkaReader(@NonNull String name, @NonNull String url) {
         kafkaInstance = new KafkaInstance(name, url);
@@ -30,16 +30,16 @@ public class KafkaReader {
     }
 
     private List<ConsumerRecord<String, String>> fetchMessages(@NonNull List<TopicPartition> topicPartitions,
-            int maxMessageCount) {
+            int maxMessageCount, long fetchFrom) {
         log.info("Getting messages");
 
-        List<ConsumerRecord<String, String>> topicMessages = new ArrayList<>();
+        var topicMessages = new ArrayList<ConsumerRecord<String, String>>();
         if (topicPartitions.isEmpty()) {
             log.info("topicPartitions is empty");
             return topicMessages;
         }
 
-        log.info("Obtaining end offsets");
+        log.info("Obtaining offsets");
         List<PartitionOffset> partitionOffsets = kafkaInstance.getOffsets(topicPartitions);
 
         String topic = topicPartitions.get(0).topic();
@@ -48,26 +48,22 @@ public class KafkaReader {
         var stopWatch = StopWatch.createStarted();
 
         synchronized (kafkaInstance) {
-            int remainingMessages = maxMessageCount;
-            int remainingPartitions = partitionOffsets.size();
             // TODO ensure that all partitions are from the same topic?
             kafkaInstance.assign(topicPartitions);
-            for (PartitionOffset po : partitionOffsets) {
-                if (po.getEndOffset() > po.getStartOffset()) {
-                    int messagesToFetch = remainingMessages / remainingPartitions;
-                    // fetch messages from single partition and fill them into topicMessages
-                    int availableMessages = seek(po, messagesToFetch);
-                    remainingMessages -= availableMessages;
-                }
-                --remainingPartitions;
-            }
+
+            seek(partitionOffsets, fetchFrom, maxMessageCount);
 
             var wait = minWait + maxMessageCount * waitPerMessage;
-            ConsumerRecords<String, String> partitionRecords = kafkaInstance.poll(Duration.ofMillis(wait));
+            var batchSize = 0;
+            do {
+                ConsumerRecords<String, String> batch = kafkaInstance.poll(Duration.ofMillis(wait));
+                batchSize = batch.count();
 
-            for (ConsumerRecord<String, String> record : partitionRecords) {
-                topicMessages.add(record);
-            }
+                for (var iterator = batch.iterator(); iterator.hasNext() && topicMessages.size() < maxMessageCount;) {
+                    ConsumerRecord<String, String> record = iterator.next();
+                    topicMessages.add(record);
+                }
+            } while (topicMessages.size() < maxMessageCount && batchSize > 0);
 
             log.info("Got {} messages from topic: {} in {} seconds.", topicMessages.size(), topic,
                     stopWatch.getTime(TimeUnit.SECONDS));
@@ -75,22 +71,59 @@ public class KafkaReader {
         return topicMessages;
     }
 
-    private int seek(PartitionOffset po, int messagesToFetch) {
-        long startOffset = Math.max(po.getEndOffset() - messagesToFetch, po.getStartOffset());
-        log.debug("Fetching {} messages from {}", messagesToFetch, po);
-
-        kafkaInstance.seek(po.getTopicPartition(), startOffset);
-        return (int) (po.getEndOffset() - startOffset);
+    private void seek(List<PartitionOffset> partitionOffsets, long fetchFrom, int maxMessageCount) {
+        switch ((int) fetchFrom) {
+            case 0:
+                seekToStart(partitionOffsets);
+                break;
+            case -1:
+                seekToEnd(partitionOffsets, maxMessageCount);
+                break;
+            default:
+                if (partitionOffsets.size() != 1) {
+                    throw new IllegalArgumentException(
+                            "loading from specific" + " offset is possible only if single partition is provided");
+                }
+                seekTo(partitionOffsets.get(0), fetchFrom);
+                break;
+        }
     }
 
-    public void getMessagesAsync(List<TopicPartition> topicPartitions, int i, KafkaListener listener, Object sender) {
+    private void seekToStart(List<PartitionOffset> partitionOffsets) {
+        for (PartitionOffset po : partitionOffsets) {
+            seekTo(po, po.getStartOffset());
+        }
+    }
+
+    private void seekToEnd(List<PartitionOffset> partitionOffsets, int maxMessageCount) {
+        int remainingMessages = maxMessageCount;
+        int remainingPartitions = partitionOffsets.size();
+
+        for (PartitionOffset po : partitionOffsets) {
+            if (po.getEndOffset() > po.getStartOffset()) {
+                int messagesToFetch = remainingMessages / remainingPartitions;
+                long startOffset = Math.max(po.getEndOffset() - messagesToFetch, po.getStartOffset());
+                seekTo(po, startOffset);
+                int availableMessages = (int) (po.getEndOffset() - startOffset);
+                remainingMessages -= availableMessages;
+            }
+            --remainingPartitions;
+        }
+    }
+
+    private void seekTo(PartitionOffset po, long offset) {
+        kafkaInstance.seek(po.getTopicPartition(), offset);
+    }
+
+    public void getMessagesAsync(List<TopicPartition> topicPartitions, int limit, long fetchFrom,
+            KafkaListener listener, Object sender) {
         log.info("In getMessagesAsync()");
         new Thread(new Runnable() {
             @Override
             public void run() {
                 log.info("calling getMessages()");
                 try {
-                    var messages = fetchMessages(topicPartitions, i);
+                    var messages = fetchMessages(topicPartitions, limit, fetchFrom);
                     log.info("obtained {} messages", messages.size());
                     listener.messagesReceived(messages, sender);
                 } catch (Exception e) {

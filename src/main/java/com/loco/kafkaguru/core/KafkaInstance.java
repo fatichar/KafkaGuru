@@ -70,7 +70,8 @@ public class KafkaInstance {
         this.properties.putIfAbsent("group.id", "kafka-tool");
         this.properties.putIfAbsent("auto.offset.reset", "earliest");
         this.properties.putIfAbsent("enable.auto.commit", "false");
-        this.properties.putIfAbsent("max.poll.records", 2000);
+        this.properties.putIfAbsent("max.poll.records", 100);
+        this.properties.putIfAbsent("max.partition.fetch.bytes", 100_000);
         this.properties.putIfAbsent("key.deserializer", StringDeserializer.class);
         this.properties.putIfAbsent("value.deserializer", StringDeserializer.class);
 
