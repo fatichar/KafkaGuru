@@ -4,17 +4,11 @@
     - Domain-level sync for kafka servers
 
 - Browse Mode
-  - View messages for selected topic/partition
-    - manual refresh
-    - tail mode
-    - Keep loaded messages stored, so that when a topic is re-visited,
-        at least old data is available
-  - Filter messages
+  - tail mode
   - Remote search
     - Search on kafka within specific offsets/time
   - View message body
     - support formats
-      - JSON
       - protobuf
     - Syntax highlighting
   - diff two messages
@@ -23,7 +17,6 @@
     - on message rate (below/above threshold)
     - on message key (=, contains, not contains, >, <, !=)
     - on message body (contains, not contains)
-
 
 - Write Mode
   - Add raw messages

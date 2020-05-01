@@ -26,14 +26,17 @@ public class TopicNode implements AbstractNode {
 
     public void setMessages(List<MessageModel> messages) {
         this.messages = messages;
-        // if (messages != null) {
+         if (messages != null) {
+             if (partitions.size() == 1){
+                 partitions.get(0).setMessages(messages);
+             }
         // partitions.forEach(p -> {
         // var subMessages = messages.stream().filter(m -> m.getPartition() ==
         // p.getPartition().partition())
         // .collect(Collectors.toList());
         // p.setMessages(subMessages);
         // });
-        // }
+         }
     }
 
     @Override

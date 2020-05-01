@@ -11,9 +11,10 @@ import java.util.List;
 public class ClusterNode implements AbstractNode {
     private KafkaInstance kafkaInstance;
     private List<MessageModel> messages;
+    private List<TopicNode> topicNodes;
 
     public ClusterNode(KafkaInstance kafkaInstance) {
-        this(kafkaInstance, null);
+        this(kafkaInstance, null, null);
     }
 
     @Override

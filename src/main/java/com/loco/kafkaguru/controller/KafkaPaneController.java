@@ -454,8 +454,9 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         topics = newTopics;
         rootNode.getChildren().clear();
 
-        var topicNodes = createTopicNodes(clusterNode, topics);
-        rootNode.getChildren().addAll(topicNodes);
+        createTopicNodes(clusterNode, topics);
+        var topicItems = createTopicItems(clusterNode);
+        rootNode.getChildren().addAll(topicItems);
 
         rootNode.setExpanded(true);
 
@@ -491,32 +492,52 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         return selectedNode;
     }
 
-    private List<TreeItem<AbstractNode>> createTopicNodes(ClusterNode clusterNode,
-            Map<String, List<PartitionInfo>> topics) {
+    private void createTopicNodes(ClusterNode clusterNode,
+                                             Map<String, List<PartitionInfo>> topics) {
         var topicNodes = topics.entrySet().stream()
-                .map(entry -> createTopicNode(clusterNode, entry.getKey(), entry.getValue()))
+                .map(entry -> createTopicNode(clusterNode, entry))
+                .collect(Collectors.toList());
+
+        clusterNode.setTopicNodes(topicNodes);
+    }
+
+    private TopicNode createTopicNode(ClusterNode clusterNode, Map.Entry<String, List<PartitionInfo>> entry) {
+        var topicNode = new TopicNode(clusterNode, entry.getKey(), entry.getValue());
+        //TODO remove partition node creation logic out of TopicNode class
+        return topicNode;
+    }
+
+    private List<TreeItem<AbstractNode>> createTopicItems(ClusterNode clusterNode) {
+        var topicNodes = clusterNode.getTopicNodes().stream()
+                .map(topicNode -> createTopicItem(topicNode))
                 .collect(Collectors.toList());
         return topicNodes;
     }
 
-    private TreeItem<AbstractNode> createTopicNode(ClusterNode clusterNode, String topic,
-            List<PartitionInfo> partitions) {
-        var topicNode = new TopicNode(clusterNode, topic, partitions);
+    private TreeItem<AbstractNode> createTopicItem(TopicNode topicNode) {
         var topicItem = new TreeItem<AbstractNode>(topicNode);
 
-        var partitionNodes = createPartitionNodes(topicNode, partitions);
+        var partitionNodes = createPartitionItems(topicNode);
         topicItem.getChildren().addAll(partitionNodes);
 
         return topicItem;
     }
 
-    private List<TreeItem<AbstractNode>> createPartitionNodes(TopicNode topicNode, List<PartitionInfo> partitions) {
-        return partitions.stream().map(p -> createPartitionNode(topicNode, p)).collect(Collectors.toList());
+    private List<TreeItem<AbstractNode>> createPartitionItems(TopicNode topicNode) {
+        return topicNode.getPartitions().stream()
+                .map(p -> new TreeItem<AbstractNode>(p))
+                .collect(Collectors.toList());
     }
 
-    private TreeItem<AbstractNode> createPartitionNode(TopicNode topicNode, PartitionInfo partitionInfo) {
-        return new TreeItem<>(new PartitionNode(topicNode, partitionInfo));
-    }
+//    private List<TreeItem<AbstractNode>> createPartitionNodes(TopicNode topicNode, List<PartitionInfo> partitions) {
+//        return partitions.stream()
+//                .map(p -> createPartitionNode(topicNode, p))
+//                .collect(Collectors.toList());
+//    }
+//
+//    private TreeItem<AbstractNode> createPartitionNode(TopicNode topicNode, PartitionInfo partitionInfo) {
+//        return new TreeItem<>(new PartitionNode(topicNode, partitionInfo));
+//    }
 
     private void topicMessageDividerChanged(ObservableValue<? extends Number> observable, Number oldValue,
             Number newValue) {
