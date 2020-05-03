@@ -1,38 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.effect.*?>
 <?import javafx.scene.layout.*?>
-
-<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="232.0" prefWidth="519.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.loco.kafkaguru.controller.MainWindowController">
+<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="232.0" prefWidth="519.0"
+    xmlns="http://javafx.com/javafx/10.0.2-internal"
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.loco.kafkaguru.controller.MainWindowController">
     <children>
-      <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-         <children>
-              <MenuBar id="menuBar" fx:id="menuBar">
-                  <menus>
-                      <Menu mnemonicParsing="false" text="File">
-                          <items>
-                              <MenuItem mnemonicParsing="false" onAction="#onNewConnection" text="New Connection" />
-                          </items>
-                      </Menu>
-                      <Menu mnemonicParsing="false" text="Edit">
-                          <items>
-                              <MenuItem mnemonicParsing="false" text="Delete" />
-                          </items>
-                      </Menu>
-                      <Menu mnemonicParsing="false" text="Help">
-                          <items>
-                              <MenuItem mnemonicParsing="false" text="About" />
-                          </items>
-                      </Menu>
-                  </menus>
-              </MenuBar>
-              <TabPane fx:id="tabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="507.0" prefWidth="782.0" tabClosingPolicy="UNAVAILABLE" tabMinHeight="25.0" tabMinWidth="100.0" VBox.vgrow="ALWAYS">
-               <effect>
-                  <Glow />
-               </effect>
-            </TabPane>
-         </children>
-      </VBox>
+        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <MenuBar id="menuBar" fx:id="menuBar">
+                    <menus>
+                        <Menu mnemonicParsing="true" text="_Kafka">
+                            <items>
+                                <MenuItem fx:id="newClusterMenuItem" mnemonicParsing="true" onAction="#onNewCluster" text="_New Cluster" />
+                                <Menu fx:id="openClusterMenu" mnemonicParsing="true" text="_Open Cluster" />
+                                <MenuItem fx:id="closeClusterMenuItem" mnemonicParsing="true" onAction="#onCloseTab" text="_Close Current Tab" />
+                                <Menu fx:id="removeClusterMenu" mnemonicParsing="true" text="_Remove Cluster" />
+                            </items>
+                        </Menu>
+                        <Menu mnemonicParsing="true" text="_Edit">
+                            <items>
+                                <MenuItem mnemonicParsing="true" text="Delete" />
+                            </items>
+                        </Menu>
+                        <Menu mnemonicParsing="true" text="Help">
+                            <items>
+                                <MenuItem mnemonicParsing="true" text="About" />
+                            </items>
+                        </Menu>
+                    </menus>
+                </MenuBar>
+                <TabPane fx:id="tabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="507.0" prefWidth="782.0" tabClosingPolicy="UNAVAILABLE" tabMinHeight="25.0" tabMinWidth="100.0" VBox.vgrow="ALWAYS">
+                    <effect>
+                        <Glow />
+                    </effect>
+                </TabPane>
+            </children>
+        </VBox>
     </children>
 </AnchorPane>

@@ -101,24 +101,24 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     private long fetchFrom = -1;
     private boolean connected;
     private DoubleProperty topicMessageDividerPos;
+    private String id;
 
-    public KafkaPaneController(ControllerListener parent, Preferences preferences) {
+    public KafkaPaneController(KafkaClusterInfo cluster, ControllerListener parent, Preferences preferences) {
+        id = preferences.name();
         this.parent = parent;
         this.preferences = preferences;
-        var name = preferences.get("name", null);
-        var url = preferences.get("url", null);
-        if (StringUtils.isEmpty(name)) {
+        if (StringUtils.isEmpty(cluster.getName())) {
             throw new IllegalArgumentException("name is not specified");
         }
-        if (StringUtils.isEmpty(url)) {
+        if (StringUtils.isEmpty(cluster.getUrl())) {
             throw new IllegalArgumentException("url is not specified");
         }
 
-        cluster = new KafkaClusterInfo(name, url);
+        this.cluster = cluster;
     }
 
-    public String getName() {
-        return cluster == null ? "" : cluster.getName();
+    public String getId() {
+        return id;
     }
 
     @Override
@@ -325,8 +325,8 @@ public class KafkaPaneController implements Initializable, KafkaListener {
             selectedTopic = partitionNode.getPartition().topic();
         }
 
-        preferences.put("selectedTopic", selectedTopic);
-        preferences.putInt("selectedPartition", selectedPartition);
+        preferences.put("selected_topic", selectedTopic);
+        preferences.putInt("selected_partition", selectedPartition);
     }
 
     private void fetchMessages(AbstractNode node) {
@@ -465,13 +465,13 @@ public class KafkaPaneController implements Initializable, KafkaListener {
             topicsTree.getSelectionModel().select(lastSelectedTreeItem);
         }
 
-        var lastDividerPos = preferences.getDouble("topic_message_divider", 0.1);
+        var lastDividerPos = preferences.getDouble("topic_message_divider_pos", 0.1);
         topicMessageDividerPos.set(lastDividerPos);
         topicMessageDividerPos.addListener(this::topicMessageDividerChanged);
     }
 
     private TreeItem<AbstractNode> getLastSelectedTreeItem(TreeItem<AbstractNode> rootNode) {
-        var topic = preferences.get("selectedTopic", "");
+        var topic = preferences.get("selected_topic", "");
         var topicNode = rootNode.getChildren().stream().filter(node -> {
             return topic.equals(((TopicNode) node.getValue()).getTopic());
         }).findFirst().orElse(null);
@@ -479,7 +479,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         if (topicNode == null)
             return null;
 
-        var partition = preferences.getInt("selectedPartition", -1);
+        var partition = preferences.getInt("selected_partition", -1);
         TreeItem<AbstractNode> partitionNode = null;
 
         if (partition >= 0) {
@@ -541,6 +541,6 @@ public class KafkaPaneController implements Initializable, KafkaListener {
 
     private void topicMessageDividerChanged(ObservableValue<? extends Number> observable, Number oldValue,
             Number newValue) {
-        preferences.putDouble("topic_message_divider", newValue.doubleValue());
+        preferences.putDouble("topic_message_divider_pos", newValue.doubleValue());
     }
 }
