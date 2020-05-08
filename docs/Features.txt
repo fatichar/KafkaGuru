@@ -8,8 +8,6 @@
   - Remote search
     - Search on kafka within specific offsets/time
   - View message body
-    - support formats
-      - protobuf
     - Syntax highlighting
   - diff two messages
   - Alerts!
