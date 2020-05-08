@@ -618,6 +618,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         if (nodeNames.isEmpty()) {
             return;
         }
+        nodeNames = new ArrayList<>(nodeNames);
         var nodeName = nodeNames.remove(0);
         switch (nodeName) {
             case "topics":

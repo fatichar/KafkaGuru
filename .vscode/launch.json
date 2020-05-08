@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "preLaunchTask": "build",
+            "type": "java",
+            "name": "Debug (Launch)-App<JavaFXApp>",
+            "request": "launch",
+            "args": "--module-path c:\\javafx-14\\lib --add-modules javafx.controls,javafx.fxml",
+            "mainClass": "com.loco.kafkaguru.App",
+            "projectName": "JavaFXApp"
+        }
+    ]
+}

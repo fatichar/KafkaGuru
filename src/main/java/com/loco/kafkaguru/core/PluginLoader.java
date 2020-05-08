@@ -3,7 +3,6 @@ package com.loco.kafkaguru.core;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loco.kafkaguru.MessageFormatter;
-import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.json.JSONObject;
 
@@ -14,7 +13,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 class PluginInfo {
@@ -91,12 +89,14 @@ public class PluginLoader extends ClassLoader {
         for (var className : classNames) {
             // String className = je.getName().substring(0, je.getName().length() - 6);
             try {
-                Class c = cl.loadClass(className);
+                var c = cl.loadClass(className);
                 System.out.println("loaded class " + c.getName());
                 try {
-                    var formatter = (MessageFormatter) c.getDeclaredConstructor().newInstance();
+                    var foreignFormatter = c.getDeclaredConstructor().newInstance();
                     System.out.println("Adding formatter " + c.getName());
-                    formatters.put(formatter.name(), formatter);
+                    var localFormatter = new CustomMessageFormatter(foreignFormatter);
+                    System.out.println("Added formatter " + c.getName());
+                    formatters.put(localFormatter.name(), localFormatter);
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                     e.printStackTrace();
