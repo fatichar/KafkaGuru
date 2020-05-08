@@ -1,7 +1,9 @@
 package com.loco.kafkaguru.controller;
 
+import com.loco.kafkaguru.MessageFormatter;
 import com.loco.kafkaguru.core.KafkaInstance;
 import com.loco.kafkaguru.core.KafkaReader;
+import com.loco.kafkaguru.core.PluginLoader;
 import com.loco.kafkaguru.core.listeners.KafkaListener;
 import com.loco.kafkaguru.model.KafkaClusterInfo;
 import com.loco.kafkaguru.viewmodel.*;
@@ -18,6 +20,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -36,7 +40,6 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     // UI controls
     @FXML
     private SplitPane topicsMessagesPane;
-
     @FXML
     private Accordion topicsAccordian;
     @FXML
@@ -102,6 +105,7 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     private boolean connected;
     private DoubleProperty topicMessageDividerPos;
     private String id;
+    private ContextMenu topicContextMenu;
 
     public KafkaPaneController(KafkaClusterInfo cluster, ControllerListener parent, Preferences preferences) {
         id = preferences.name();
@@ -281,6 +285,78 @@ public class KafkaPaneController implements Initializable, KafkaListener {
                 treeSelectionChanged(newItem);
             }
         });
+
+        topicContextMenu = new ContextMenu();
+        var headerItem = new MenuItem("Select Message Format");
+        // headerItem.setDisable(true);
+        topicContextMenu.getItems().add(headerItem);
+        topicContextMenu.getItems().add(new SeparatorMenuItem());
+        for (var name : PluginLoader.formatters.keySet()) {
+            var menuItem = new RadioMenuItem(name);
+            menuItem.setUserData(name);
+            topicContextMenu.getItems().add(menuItem);
+            menuItem.setOnAction(event -> {
+                var item = (MenuItem) event.getSource();
+                var formatterName = (String) item.getUserData();
+                log.info("Selected formatter " + formatterName);
+                var formatter = PluginLoader.formatters.get(formatterName);
+
+                TopicNode topicNode = getTopicNode(currentTopicNode);
+                if (topicNode != null) {
+                    log.info("Selected topic " + topicNode.getTopic());
+                    topicNode.setFormatter(formatter);
+                    messagesModel.setMessages(currentTopicNode.getMessages());
+                    saveFormatter(topicNode.getTopic(), formatter);
+                } else {
+                    log.info("Selected topic is null");
+                }
+            });
+        }
+        topicsTree.addEventHandler(MouseEvent.MOUSE_RELEASED, e -> {
+            if (e.getButton() == MouseButton.SECONDARY) {
+                TreeItem<AbstractNode> selected = topicsTree.getSelectionModel().getSelectedItem();
+
+                // item is selected - this prevents fail when clicking on empty space
+                if (selected != null) {
+                    // open context menu on current screen position
+                    openContextMenu(selected, e.getScreenX(), e.getScreenY());
+                }
+            } else {
+                // any other click cause hiding menu
+                topicContextMenu.hide();
+            }
+        });
+    }
+
+    private TopicNode getTopicNode(AbstractNode node) {
+        TopicNode topicNode = null;
+        if (node instanceof TopicNode) {
+            topicNode = (TopicNode) node;
+        } else if (node instanceof PartitionNode) {
+            topicNode = (TopicNode) ((PartitionNode) node).getParent();
+        }
+        return topicNode;
+    }
+
+    private void openContextMenu(TreeItem<AbstractNode> treeItem, double x, double y) {
+        // custom method that update menu items
+        topicContextMenu.setUserData(treeItem.getValue());
+
+        // show menu
+        topicContextMenu.show(topicsTree, x, y);
+        topicContextMenu.getItems().forEach(item -> {
+            if (item instanceof RadioMenuItem) {
+                var radioItem = (RadioMenuItem) item;
+                radioItem.setSelected(false);
+                // TODO use treeItem
+                var node = getTopicNode(treeItem.getValue());
+                if (item.getUserData() != null && node != null) {
+                    if (radioItem.getUserData().equals(node.getFormatter().name())) {
+                        radioItem.setSelected(true);
+                    }
+                }
+            }
+        });
     }
 
     private void setupKafka() {
@@ -345,11 +421,13 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         refreshButton.setDisable(isLoading);
     }
 
-    private static List<MessageModel> createMessages(int startRow, List<ConsumerRecord<String, String>> records) {
+    private static List<MessageModel> createMessages(int startRow, List<ConsumerRecord<String, byte[]>> records,
+            MessageFormatter formatter) {
         final var row = new Object() {
             public int value = startRow;
         };
-        var messages = records.stream().map(record -> new MessageModel(++row.value, record))
+
+        var messages = records.stream().map(record -> new MessageModel(++row.value, record, formatter))
                 .collect(Collectors.toList());
         return messages;
     }
@@ -375,40 +453,47 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     }
 
     @Override
-    public void messagesReceived(List<ConsumerRecord<String, String>> records, Object sender, int batchNumber,
+    public void messagesReceived(List<ConsumerRecord<String, byte[]>> records, Object sender, int batchNumber,
             boolean moreToCome) {
         log.info("Received {} messages", records.size());
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                log.info("Processing {} messages", records.size());
-                // update the sender node
-                var senderNode = (AbstractNode) sender;
-                if (batchNumber == 1) {
-                    var messages = createMessages(0, records);
-                    senderNode.setMessages(messages);
-                } else {
-                    var messages = createMessages(senderNode.getMessages().size(), records);
-                    senderNode.addMessages(messages);
-                }
-                log.info("Added {} messages to the node", records.size());
+        Platform.runLater(() -> {
+            log.info("Processing {} messages", records.size());
+            // update the sender node
+            var senderNode = (AbstractNode) sender;
+            var formatter = getFormatter(senderNode);
+            if (batchNumber == 1) {
+                var messages = createMessages(0, records, formatter);
+                senderNode.setMessages(messages);
+            } else {
+                var messages = createMessages(senderNode.getMessages().size(), records, formatter);
+                senderNode.addMessages(messages);
+            }
+            log.info("Added {} messages to the node", records.size());
 
-                setLoadingStatus(moreToCome);
+            setLoadingStatus(moreToCome);
 
-                if (currentTopicNode == senderNode) {
-                    updateMessagesTable();
-                    log.info("Added {} messages to the table", records.size());
+            if (currentTopicNode == senderNode) {
+                updateMessagesTable();
+                log.info("Added {} messages to the table", records.size());
+            } else {
+                if (currentNodeStale) {
+                    fetchMessages(currentTopicNode);
+                    currentNodeStale = false;
                 } else {
-                    if (currentNodeStale) {
-                        fetchMessages(currentTopicNode);
-                        currentNodeStale = false;
-                    } else {
-                        new Alert(Alert.AlertType.WARNING,
-                                "currentTopicNode != senderNode, and currentNodeStale is false").showAndWait();
-                    }
+                    new Alert(Alert.AlertType.WARNING, "currentTopicNode != senderNode, and currentNodeStale is false")
+                            .showAndWait();
                 }
             }
         });
+    }
+
+    private MessageFormatter getFormatter(AbstractNode senderNode) {
+        var formatter = PluginLoader.defaultFormatter;
+        var topicNode = getTopicNode(senderNode);
+        if (topicNode != null) {
+            formatter = topicNode.getFormatter();
+        }
+        return formatter;
     }
 
     private void updateMessagesTable() {
@@ -492,10 +577,8 @@ public class KafkaPaneController implements Initializable, KafkaListener {
         return selectedNode;
     }
 
-    private void createTopicNodes(ClusterNode clusterNode,
-                                             Map<String, List<PartitionInfo>> topics) {
-        var topicNodes = topics.entrySet().stream()
-                .map(entry -> createTopicNode(clusterNode, entry))
+    private void createTopicNodes(ClusterNode clusterNode, Map<String, List<PartitionInfo>> topics) {
+        var topicNodes = topics.entrySet().stream().map(entry -> createTopicNode(clusterNode, entry))
                 .collect(Collectors.toList());
 
         clusterNode.setTopicNodes(topicNodes);
@@ -503,13 +586,79 @@ public class KafkaPaneController implements Initializable, KafkaListener {
 
     private TopicNode createTopicNode(ClusterNode clusterNode, Map.Entry<String, List<PartitionInfo>> entry) {
         var topicNode = new TopicNode(clusterNode, entry.getKey(), entry.getValue());
-        //TODO remove partition node creation logic out of TopicNode class
+        // TODO remove partition node creation logic out of TopicNode class
+        topicNode.setFormatter(getFormatter(topicNode.getTopic()));
         return topicNode;
     }
 
+    private MessageFormatter getFormatter(String topic) {
+        var nodes = new ArrayList<String>();
+        nodes.add("topics");
+        nodes.add(topic);
+
+        var formatterName = parent.getPreference(nodes, "formatter");
+        if (!StringUtils.isEmpty(formatterName)) {
+            var formatter = PluginLoader.formatters.get(formatterName);
+            if (formatter != null) {
+                return formatter;
+            }
+        }
+        return PluginLoader.defaultFormatter;
+    }
+
+    private void saveFormatter(String topic, MessageFormatter formatter) {
+        var nodes = new ArrayList<String>();
+        nodes.add("topics");
+        nodes.add(topic);
+
+        parent.savePreference(nodes, "formatter", formatter.name());
+    }
+
+    public void preferenceUpdated(ArrayList<String> nodeNames, String key, String value) {
+        if (nodeNames.isEmpty()) {
+            return;
+        }
+        var nodeName = nodeNames.remove(0);
+        switch (nodeName) {
+            case "topics":
+                var topic = nodeNames.remove(0);
+                topicPreferenceUpdated(nodeNames, topic, key, value);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void topicPreferenceUpdated(ArrayList<String> nodeNames, String topic, String key, String value) {
+        var topicNode = getTopicNode(topic);
+        if (topicNode != null) {
+            switch (key) {
+                case "formatter":
+                    var formatter = PluginLoader.formatters.get(value);
+                    topicNode.setFormatter(formatter);
+                    messagesModel.setMessages(currentTopicNode.getMessages());
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private TopicNode getTopicNode(String topic) {
+        var topicItem = topicsTree.getRoot().getChildren().stream().filter(item -> {
+            var node = item.getValue();
+            if (node instanceof TopicNode) {
+                var topicName = ((TopicNode) node).getTopic();
+                return topic.equals(topicName);
+            }
+            return false;
+        }).findFirst();
+
+        return topicItem.isEmpty() ? null : (TopicNode) topicItem.get().getValue();
+    }
+
     private List<TreeItem<AbstractNode>> createTopicItems(ClusterNode clusterNode) {
-        var topicNodes = clusterNode.getTopicNodes().stream()
-                .map(topicNode -> createTopicItem(topicNode))
+        var topicNodes = clusterNode.getTopicNodes().stream().map(topicNode -> createTopicItem(topicNode))
                 .collect(Collectors.toList());
         return topicNodes;
     }
@@ -524,20 +673,8 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     }
 
     private List<TreeItem<AbstractNode>> createPartitionItems(TopicNode topicNode) {
-        return topicNode.getPartitions().stream()
-                .map(p -> new TreeItem<AbstractNode>(p))
-                .collect(Collectors.toList());
+        return topicNode.getPartitions().stream().map(p -> new TreeItem<AbstractNode>(p)).collect(Collectors.toList());
     }
-
-//    private List<TreeItem<AbstractNode>> createPartitionNodes(TopicNode topicNode, List<PartitionInfo> partitions) {
-//        return partitions.stream()
-//                .map(p -> createPartitionNode(topicNode, p))
-//                .collect(Collectors.toList());
-//    }
-//
-//    private TreeItem<AbstractNode> createPartitionNode(TopicNode topicNode, PartitionInfo partitionInfo) {
-//        return new TreeItem<>(new PartitionNode(topicNode, partitionInfo));
-//    }
 
     private void topicMessageDividerChanged(ObservableValue<? extends Number> observable, Number oldValue,
             Number newValue) {

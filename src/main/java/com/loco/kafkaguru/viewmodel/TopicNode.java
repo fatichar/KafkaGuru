@@ -1,6 +1,8 @@
 package com.loco.kafkaguru.viewmodel;
 
+import com.loco.kafkaguru.MessageFormatter;
 import lombok.Data;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -11,12 +13,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Data
+@Log4j2
 public class TopicNode implements AbstractNode {
     private AbstractNode parent;
     private String topic;
     List<PartitionNode> partitions;
 
     private List<MessageModel> messages;
+    private MessageFormatter formatter;
 
     public TopicNode(AbstractNode parent, String topic, List<PartitionInfo> partitions) {
         this.parent = parent;
@@ -61,10 +65,10 @@ public class TopicNode implements AbstractNode {
     }
 
     public boolean equals(Object other) {
-        TopicNode otherNode = (TopicNode) other;
-        if (otherNode == null) {
+        if (!(other instanceof PartitionNode)) {
             return false;
         }
+        TopicNode otherNode = (TopicNode) other;
         if (!StringUtils.equals(topic, otherNode.getTopic())) {
             return false;
         }
@@ -101,5 +105,26 @@ public class TopicNode implements AbstractNode {
 
     public Enumeration children() {
         return Collections.enumeration(partitions);
+    }
+
+    public void setFormatter(MessageFormatter formatter) {
+        log.info("In topic " + topic);
+        log.info("existing formatter " + (this.formatter == null ? "null" : this.formatter.name()));
+        log.info("Setting formatter " + formatter.name());
+        if (this.formatter != formatter) {
+            this.formatter = formatter;
+            partitions.forEach(p -> p.setFormatter(formatter));
+            reformatMessages();
+        }
+    }
+
+    private void reformatMessages() {
+        if (messages != null) {
+            messages.forEach(msg -> msg.setFormatter(formatter));
+        }
+    }
+
+    public MessageFormatter getFormatter() {
+        return formatter;
     }
 }

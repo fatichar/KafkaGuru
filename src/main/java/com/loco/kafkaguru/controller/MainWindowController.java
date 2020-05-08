@@ -1,5 +1,6 @@
 package com.loco.kafkaguru.controller;
 
+import com.loco.kafkaguru.core.PluginLoader;
 import com.loco.kafkaguru.model.KafkaClusterInfo;
 import com.loco.kafkaguru.view.KafkaPane;
 import javafx.event.ActionEvent;
@@ -39,6 +40,7 @@ public class MainWindowController implements Initializable, ControllerListener {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        PluginLoader.loadPlugins();
         preferences = readPreferences();
         clusters = createClusters(preferences);
         createMenuItems(clusters);
@@ -318,6 +320,30 @@ public class MainWindowController implements Initializable, ControllerListener {
     public void destroy(KafkaPaneController controller) {
         tabPane.getTabs().remove(controller.getId());
         controllers.remove(controller);
+    }
+
+    @Override
+    public void savePreference(ArrayList<String> nodeNames, String key, String value) {
+        Preferences leafNode = preferences;
+
+        for (var nodeName : nodeNames){
+            leafNode = leafNode.node(nodeName);
+        }
+
+        leafNode.put(key, value);
+
+        controllers.values().forEach(c -> c.preferenceUpdated(nodeNames, key, value));
+    }
+
+    @Override
+    public String getPreference(ArrayList<String> nodeNames, String key) {
+        Preferences leafNode = preferences;
+
+        for (var nodeName : nodeNames){
+            leafNode = leafNode.node(nodeName);
+        }
+
+        return leafNode.get(key, "");
     }
 
     /**

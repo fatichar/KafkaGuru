@@ -1,16 +1,20 @@
 package com.loco.kafkaguru.viewmodel;
 
+import com.loco.kafkaguru.MessageFormatter;
+import com.loco.kafkaguru.core.PluginLoader;
 import javafx.beans.property.*;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.json.JSONObject;
 
 public class MessageModel {
-    private static final int MAX_MESSAGE_SUMMARY_LEN = 100;
+    private static final int MAX_MESSAGE_SUMMARY_LEN = 200;
 
     private IntegerProperty index;
     private IntegerProperty partition;
@@ -23,39 +27,50 @@ public class MessageModel {
 
     String timestampPattern = "E, dd MMM yyyy HH:mm:ss";
     SimpleDateFormat simpleDateFormat = new SimpleDateFormat(timestampPattern);
+    private MessageFormatter formatter;
+    private ConsumerRecord<String, byte[]> record;
 
-    public MessageModel(int index, ConsumerRecord<String, String> record) {
+    public MessageModel(int index, ConsumerRecord<String, byte[]> record, MessageFormatter formatter) {
+        this.record = record;
+        this.formatter = formatter;
         this.index = new SimpleIntegerProperty(index);
         partition = new SimpleIntegerProperty(record.partition());
         offset = new SimpleLongProperty(record.offset());
         key = new SimpleStringProperty(record.key());
-        messageBody = new SimpleStringProperty(format(record.value()));
-        messageSummary = new SimpleStringProperty(summarize(record.value()));
+        var formatted = format(record.value());
+        messageBody = new SimpleStringProperty(formatted);
+        messageSummary = new SimpleStringProperty(summarize(formatted));
 
         timestamp = new SimpleObjectProperty<>(Date.from(Instant.ofEpochMilli(record.timestamp())));
     }
 
     private String summarize(String text) {
-        var summary = text == null ? ""
-                : text.length() > MAX_MESSAGE_SUMMARY_LEN ? text.substring(0, MAX_MESSAGE_SUMMARY_LEN) : text;
+        var summary =
+                text == null
+                        ? ""
+                        : text.length() > MAX_MESSAGE_SUMMARY_LEN
+                                ? text.substring(0, MAX_MESSAGE_SUMMARY_LEN)
+                                : text;
 
         while (summary.contains("\n") || summary.contains("\r")) {
             summary = summary.replace("\n", " ").replace("\r", " ");
         }
+        summary = summary.replace("  ", " ");
+        summary = summary.replace("  ", " ");
 
         return summary;
     }
 
-    private String format(String text) {
-        if (text == null) {
-            return "";
+    private String format(byte[] data) {
+        if (data == null || formatter == null) {
+            return new String(data);
         }
 
         try {
-            String indented = new JSONObject(text).toString(4);
-            return indented;
+            var formatted = formatter.format(data);
+            return formatted;
         } catch (Exception e) {
-            return text;
+            return new String(data);
         }
     }
 
@@ -85,5 +100,12 @@ public class MessageModel {
 
     public String getMessageBody() {
         return messageBody.get();
+    }
+
+    public void setFormatter(MessageFormatter formatter) {
+        this.formatter = formatter;
+        var formatted = format(record.value());
+        messageBody = new SimpleStringProperty(formatted);
+        messageSummary = new SimpleStringProperty(summarize(formatted));
     }
 }

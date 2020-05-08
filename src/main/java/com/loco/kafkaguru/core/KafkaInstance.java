@@ -9,6 +9,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.net.InetAddress;
@@ -23,9 +24,9 @@ public class KafkaInstance {
     @Getter
     private String url;
     private Properties properties;
-    private KafkaConsumer<String, String> consumer;
+    private KafkaConsumer<String, byte[]> consumer;
 
-    private synchronized void setConsumer(KafkaConsumer<String, String> consumer) {
+    private synchronized void setConsumer(KafkaConsumer<String, byte[]> consumer) {
         this.consumer = consumer;
     }
 
@@ -63,7 +64,7 @@ public class KafkaInstance {
         }
     }
 
-    private KafkaConsumer<String, String> createConsumer(String url, Properties properties)
+    private KafkaConsumer<String, byte[]> createConsumer(String url, Properties properties)
             throws UnknownHostException {
         this.properties.putIfAbsent("bootstrap.servers", url);
         this.properties.putIfAbsent("client.id", InetAddress.getLocalHost().getHostName());
@@ -73,9 +74,9 @@ public class KafkaInstance {
         this.properties.putIfAbsent("max.poll.records", 100);
         this.properties.putIfAbsent("max.partition.fetch.bytes", 100_000);
         this.properties.putIfAbsent("key.deserializer", StringDeserializer.class);
-        this.properties.putIfAbsent("value.deserializer", StringDeserializer.class);
+        this.properties.putIfAbsent("value.deserializer", ByteArrayDeserializer.class);
 
-        return new KafkaConsumer<String, String>(this.properties);
+        return new KafkaConsumer<String, byte[]>(this.properties);
     }
 
     public void connectAsync(KafkaListener listener) {
@@ -116,7 +117,7 @@ public class KafkaInstance {
         }
     }
 
-    public ConsumerRecords<String, String> poll(Duration timeout) {
+    public ConsumerRecords<String, byte[]> poll(Duration timeout) {
         synchronized (consumer) {
             return consumer.poll(timeout);
         }

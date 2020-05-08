@@ -9,7 +9,7 @@ import java.util.Map;
 public interface KafkaListener {
     public void topicsUpdated(Map<String, List<PartitionInfo>> topics);
 
-    void messagesReceived(List<ConsumerRecord<String, String>> records, Object sender, int batchNumber,
+    void messagesReceived(List<ConsumerRecord<String, byte[]>> records, Object sender, int batchNumber,
             boolean moreToCome);
 
     void connected(boolean really);

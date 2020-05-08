@@ -68,10 +68,10 @@ public class KafkaReader {
         }
     }
 
-    private ArrayList<ConsumerRecord<String, String>> getNextBatch(int maxMessageCount, long wait) {
+    private ArrayList<ConsumerRecord<String, byte[]>> getNextBatch(int maxMessageCount, long wait) {
         var batch = kafkaInstance.poll(Duration.ofMillis(wait));
 
-        var batchMessages = new ArrayList<ConsumerRecord<String, String>>();
+        var batchMessages = new ArrayList<ConsumerRecord<String, byte[]>>();
         for (var record : batch) {
             if (batchMessages.size() == maxMessageCount) {
                 break;
