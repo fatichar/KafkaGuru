@@ -31,15 +31,20 @@ public class PluginLoader extends ClassLoader {
         loadNativeFormatters();
 
         var pluginInfoFilePath = Paths.get(PLUGIN_DIR, PLUGIN_INFO_FILE).toString();
+        var file = new File(pluginInfoFilePath);
+        if (!file.exists()){
+            log.info("No plugins found");
+            return;
+        }
         PluginInfo pluginInfo = null;
         try {
-            pluginInfo = mapper.readValue(new File(pluginInfoFilePath), PluginInfo.class);
+            pluginInfo = mapper.readValue(file, PluginInfo.class);
+            loadPlugins(pluginInfo);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        loadPlugins(pluginInfo);
     }
 
     private static void loadNativeFormatters() {
