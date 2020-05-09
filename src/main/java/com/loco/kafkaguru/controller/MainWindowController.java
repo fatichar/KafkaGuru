@@ -7,9 +7,9 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.log4j.Log4j2;
+//import lombok.Getter;
+//import lombok.Setter;
+//import lombok.extern.log4j.Log4j2;
 
 import java.net.URL;
 import java.util.*;
@@ -17,9 +17,9 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
-@Getter
-@Setter
-@Log4j2
+//@Getter
+// @Setter
+// @Log4j2
 public class MainWindowController implements Initializable, ControllerListener {
     @FXML
     private MenuItem newClusterMenuItem;
@@ -100,15 +100,15 @@ public class MainWindowController implements Initializable, ControllerListener {
             var clusterName = getclusterName(tabNode);
             var cluster = clusters.get(clusterName);
             if (cluster == null) {
-                log.error(
-                        "Tab with name {} could not be loaded, because "
-                                + "the cluster {} could not be found in saved preferences",
-                        tabNode.name(), clusterName);
+                // log.error(
+                // "Tab with name {} could not be loaded, because "
+                // + "the cluster {} could not be found in saved preferences",
+                // tabNode.name(), clusterName);
                 continue;
             }
             var controllerId = tabNode.name();
             if (controllerId == null) {
-                log.error("Too many tabs for cluster {}", clusterName);
+                // log.error("Too many tabs for cluster {}", clusterName);
                 continue;
             }
             var controller = new KafkaPaneController(cluster, this, tabNode);
@@ -326,7 +326,7 @@ public class MainWindowController implements Initializable, ControllerListener {
     public void savePreference(ArrayList<String> nodeNames, String key, String value) {
         Preferences leafNode = preferences;
 
-        for (var nodeName : nodeNames){
+        for (var nodeName : nodeNames) {
             leafNode = leafNode.node(nodeName);
         }
 
@@ -339,7 +339,7 @@ public class MainWindowController implements Initializable, ControllerListener {
     public String getPreference(ArrayList<String> nodeNames, String key) {
         Preferences leafNode = preferences;
 
-        for (var nodeName : nodeNames){
+        for (var nodeName : nodeNames) {
             leafNode = leafNode.node(nodeName);
         }
 

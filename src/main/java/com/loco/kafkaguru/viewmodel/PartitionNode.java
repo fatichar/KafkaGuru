@@ -1,20 +1,36 @@
 package com.loco.kafkaguru.viewmodel;
 
 import com.loco.kafkaguru.MessageFormatter;
-import lombok.Data;
-import lombok.extern.log4j.Log4j2;
+//import lombok.Data;
+//import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 
 import java.util.List;
 
-@Data
-@Log4j2
+//@Data
+// @Log4j2
 public class PartitionNode implements AbstractNode {
     private final TopicPartition topicPartition;
     private AbstractNode parent;
+
+    public PartitionInfo getPartition() {
+        return partition;
+    }
+
     private PartitionInfo partition;
     private final String name;
+
+    @Override
+    public List<MessageModel> getMessages() {
+        return messages;
+    }
+
+    @Override
+    public void setMessages(List<MessageModel> messages) {
+        this.messages = messages;
+    }
+
     private List<MessageModel> messages;
     private MessageFormatter formatter;
 
@@ -50,9 +66,10 @@ public class PartitionNode implements AbstractNode {
     }
 
     public void setFormatter(MessageFormatter formatter) {
-        log.info("In partition " + topicPartition.toString());
-        log.info("existing formatter " + (this.formatter == null ? "null" : this.formatter.name()));
-        log.info("Setting formatter " + formatter.name());
+        // log.info("In partition " + topicPartition.toString());
+        // log.info("existing formatter " + (this.formatter == null ? "null" :
+        // this.formatter.name()));
+        // log.info("Setting formatter " + formatter.name());
         if (this.formatter != formatter) {
             this.formatter = formatter;
             reformatMessages();
@@ -67,5 +84,13 @@ public class PartitionNode implements AbstractNode {
 
     public MessageFormatter getFormatter() {
         return formatter;
+    }
+
+    public TopicPartition getTopicPartition() {
+        return topicPartition;
+    }
+
+    public AbstractNode getParent() {
+        return parent;
     }
 }

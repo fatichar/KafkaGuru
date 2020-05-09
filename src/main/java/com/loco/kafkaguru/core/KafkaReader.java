@@ -1,10 +1,10 @@
 package com.loco.kafkaguru.core;
 
 import com.loco.kafkaguru.core.listeners.KafkaListener;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.time.StopWatch;
+//import lombok.Getter;
+//import lombok.NonNull;
+//import lombok.extern.log4j.Log4j2;
+// import org.apache.commons.lang3.time.StopWatch;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 
@@ -13,37 +13,41 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-@Log4j2
-@Getter
+//@Log4j2
+//@Getter
 public class KafkaReader {
+    public KafkaInstance getKafkaInstance() {
+        return kafkaInstance;
+    }
+
     private KafkaInstance kafkaInstance;
     private long maxWait = 10000;
     private long waitPerMessage = 10;
 
-    public KafkaReader(@NonNull String name, @NonNull String url) {
+    public KafkaReader(String name, String url) {
         kafkaInstance = new KafkaInstance(name, url);
     }
 
-    public KafkaReader(@NonNull KafkaInstance instance) {
+    public KafkaReader(KafkaInstance instance) {
         this.kafkaInstance = instance;
     }
 
-    private void fetchMessages(@NonNull List<TopicPartition> topicPartitions, int maxMessageCount, long fetchFrom,
+    private void fetchMessages(List<TopicPartition> topicPartitions, int maxMessageCount, long fetchFrom,
             KafkaListener listener, Object sender) {
-        log.info("Getting messages");
+        // log.info("Getting messages");
 
         if (topicPartitions.isEmpty()) {
-            log.info("topicPartitions is empty");
+            // log.info("topicPartitions is empty");
             return;
         }
 
-        log.info("Obtaining offsets");
+        // log.info("Obtaining offsets");
         List<PartitionOffset> partitionOffsets = kafkaInstance.getOffsets(topicPartitions);
 
         String topic = topicPartitions.get(0).topic();
-        log.info("Fetching {} messages from topic {}", maxMessageCount, topic);
+        // log.info("Fetching {} messages from topic {}", maxMessageCount, topic);
 
-        var stopWatch = StopWatch.createStarted();
+        // var stopWatch = StopWatch.createStarted();
 
         synchronized (kafkaInstance) {
             // TODO ensure that all partitions are from the same topic?
@@ -57,14 +61,15 @@ public class KafkaReader {
 
                 var batchSize = batch.size();
                 totalCount += batchSize;
-                log.info("obtained {} messages, total {}", batchSize, totalCount);
+                // log.info("obtained {} messages, total {}", batchSize, totalCount);
 
                 more = (totalCount < maxMessageCount) && (batchSize > 0);
                 listener.messagesReceived(batch, sender, batchNumber, more);
             }
 
-            log.info("Finished reading {} messages from topic: {} in {} seconds.", totalCount, topic,
-                    stopWatch.getTime(TimeUnit.SECONDS));
+            // log.info("Finished reading {} messages from topic: {} in {} seconds.",
+            // totalCount, topic,
+            // stopWatch.getTime(TimeUnit.SECONDS));
         }
     }
 
@@ -127,11 +132,11 @@ public class KafkaReader {
 
     public void getMessagesAsync(List<TopicPartition> topicPartitions, int limit, long fetchFrom,
             KafkaListener listener, Object sender) {
-        log.info("In getMessagesAsync()");
+        // log.info("In getMessagesAsync()");
         new Thread(new Runnable() {
             @Override
             public void run() {
-                log.info("calling getMessages()");
+                // log.info("calling getMessages()");
                 try {
                     fetchMessages(topicPartitions, limit, fetchFrom, listener, sender);
                 } catch (Exception e) {

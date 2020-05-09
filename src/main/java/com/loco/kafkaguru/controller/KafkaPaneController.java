@@ -22,8 +22,8 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
+//import lombok.extern.log4j.Log4j2;
+// import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -35,7 +35,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
-@Log4j2
+//@Log4j2
 public class KafkaPaneController implements Initializable, KafkaListener {
     // UI controls
     @FXML
@@ -298,17 +298,17 @@ public class KafkaPaneController implements Initializable, KafkaListener {
             menuItem.setOnAction(event -> {
                 var item = (MenuItem) event.getSource();
                 var formatterName = (String) item.getUserData();
-                log.info("Selected formatter " + formatterName);
+                // log.info("Selected formatter " + formatterName);
                 var formatter = PluginLoader.formatters.get(formatterName);
 
                 TopicNode topicNode = getTopicNode(currentTopicNode);
                 if (topicNode != null) {
-                    log.info("Selected topic " + topicNode.getTopic());
+                    // log.info("Selected topic " + topicNode.getTopic());
                     topicNode.setFormatter(formatter);
                     messagesModel.setMessages(currentTopicNode.getMessages());
                     saveFormatter(topicNode.getTopic(), formatter);
                 } else {
-                    log.info("Selected topic is null");
+                    // log.info("Selected topic is null");
                 }
             });
         }
@@ -455,9 +455,9 @@ public class KafkaPaneController implements Initializable, KafkaListener {
     @Override
     public void messagesReceived(List<ConsumerRecord<String, byte[]>> records, Object sender, int batchNumber,
             boolean moreToCome) {
-        log.info("Received {} messages", records.size());
+        // log.info("Received {} messages", records.size());
         Platform.runLater(() -> {
-            log.info("Processing {} messages", records.size());
+            // log.info("Processing {} messages", records.size());
             // update the sender node
             var senderNode = (AbstractNode) sender;
             var formatter = getFormatter(senderNode);
@@ -468,13 +468,13 @@ public class KafkaPaneController implements Initializable, KafkaListener {
                 var messages = createMessages(senderNode.getMessages().size(), records, formatter);
                 senderNode.addMessages(messages);
             }
-            log.info("Added {} messages to the node", records.size());
+            // log.info("Added {} messages to the node", records.size());
 
             setLoadingStatus(moreToCome);
 
             if (currentTopicNode == senderNode) {
                 updateMessagesTable();
-                log.info("Added {} messages to the table", records.size());
+                // log.info("Added {} messages to the table", records.size());
             } else {
                 if (currentNodeStale) {
                     fetchMessages(currentTopicNode);

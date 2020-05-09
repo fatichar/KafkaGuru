@@ -1,9 +1,9 @@
 package com.loco.kafkaguru.viewmodel;
 
 import com.loco.kafkaguru.MessageFormatter;
-import lombok.Data;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
+//import lombok.Data;
+//import lombok.extern.log4j.Log4j2;
+// import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 
@@ -12,11 +12,21 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Data
-@Log4j2
+//@Data
+// @Log4j2
 public class TopicNode implements AbstractNode {
     private AbstractNode parent;
+
+    public String getTopic() {
+        return topic;
+    }
+
     private String topic;
+
+    public List<PartitionNode> getPartitions() {
+        return partitions;
+    }
+
     List<PartitionNode> partitions;
 
     private List<MessageModel> messages;
@@ -28,19 +38,24 @@ public class TopicNode implements AbstractNode {
         this.partitions = partitions.stream().map(p -> new PartitionNode(this, p)).collect(Collectors.toList());
     }
 
+    @Override
+    public List<MessageModel> getMessages() {
+        return messages;
+    }
+
     public void setMessages(List<MessageModel> messages) {
         this.messages = messages;
-         if (messages != null) {
-             if (partitions.size() == 1){
-                 partitions.get(0).setMessages(messages);
-             }
-        // partitions.forEach(p -> {
-        // var subMessages = messages.stream().filter(m -> m.getPartition() ==
-        // p.getPartition().partition())
-        // .collect(Collectors.toList());
-        // p.setMessages(subMessages);
-        // });
-         }
+        if (messages != null) {
+            if (partitions.size() == 1) {
+                partitions.get(0).setMessages(messages);
+            }
+            // partitions.forEach(p -> {
+            // var subMessages = messages.stream().filter(m -> m.getPartition() ==
+            // p.getPartition().partition())
+            // .collect(Collectors.toList());
+            // p.setMessages(subMessages);
+            // });
+        }
     }
 
     @Override
@@ -69,7 +84,7 @@ public class TopicNode implements AbstractNode {
             return false;
         }
         TopicNode otherNode = (TopicNode) other;
-        if (!StringUtils.equals(topic, otherNode.getTopic())) {
+        if (!topic.equals(otherNode.getTopic())) {
             return false;
         }
         return true;
@@ -108,9 +123,10 @@ public class TopicNode implements AbstractNode {
     }
 
     public void setFormatter(MessageFormatter formatter) {
-        log.info("In topic " + topic);
-        log.info("existing formatter " + (this.formatter == null ? "null" : this.formatter.name()));
-        log.info("Setting formatter " + formatter.name());
+        // log.info("In topic " + topic);
+        // log.info("existing formatter " + (this.formatter == null ? "null" :
+        // this.formatter.name()));
+        // log.info("Setting formatter " + formatter.name());
         if (this.formatter != formatter) {
             this.formatter = formatter;
             partitions.forEach(p -> p.setFormatter(formatter));

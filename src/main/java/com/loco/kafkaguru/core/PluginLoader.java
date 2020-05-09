@@ -3,7 +3,7 @@ package com.loco.kafkaguru.core;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loco.kafkaguru.MessageFormatter;
-import lombok.extern.log4j.Log4j2;
+//import lombok.extern.log4j.Log4j2;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -19,7 +19,7 @@ class PluginInfo {
     public Map<String, String[]> classes = new HashMap<>();
 }
 
-@Log4j2
+// @Log4j2
 public class PluginLoader extends ClassLoader {
     private static final String PLUGIN_DIR = "plugins";
     private static final String PLUGIN_INFO_FILE = "PluginClasses.json";
@@ -32,8 +32,8 @@ public class PluginLoader extends ClassLoader {
 
         var pluginInfoFilePath = Paths.get(PLUGIN_DIR, PLUGIN_INFO_FILE).toString();
         var file = new File(pluginInfoFilePath);
-        if (!file.exists()){
-            log.info("No plugins found");
+        if (!file.exists()) {
+            // log.info("No plugins found");
             return;
         }
         PluginInfo pluginInfo = null;

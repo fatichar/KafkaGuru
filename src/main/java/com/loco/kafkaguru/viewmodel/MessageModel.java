@@ -11,8 +11,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.json.JSONObject;
-
 public class MessageModel {
     private static final int MAX_MESSAGE_SUMMARY_LEN = 200;
 
