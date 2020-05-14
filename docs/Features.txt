@@ -1,3 +1,12 @@
+- Core kafka
+  - Load topics only once per cluster
+  - Save topics in config
+  - Make KafkaReader stateful
+    - keep the loaded messages in memory, even when some other offsets are loaded
+    - only messages not in cache need to be fetched from kafka
+    - two types of cache - memry and disk
+    - max cache size for both - take from preferences
+
 - User Registration
   - Sync settings
   - corporate login
@@ -9,15 +18,18 @@
     - Search on kafka within specific offsets/time
   - View message body
     - Syntax highlighting
+    - Search term highlighting
   - diff two messages
-  - Alerts!
-    - on message count
-    - on message rate (below/above threshold)
-    - on message key (=, contains, not contains, >, <, !=)
-    - on message body (contains, not contains)
+  
+- Alerts!
+  - on message count
+  - on message rate (below/above threshold)
+  - on message key (=, contains, not contains, >, <, !=)
+  - on message body (contains, not contains)
 
 - Write Mode
-  - Add raw messages
+  - Publish raw messages
   - Create message template
     - Create from existing messages
-  - Add using template
+  - Publish using template
+  - Scheduled Publish

@@ -28,7 +28,11 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.prefs.BackingStoreException;
@@ -37,6 +41,7 @@ import java.util.stream.Collectors;
 
 @Log4j2
 public class KafkaPaneController implements Initializable, KafkaListener {
+    private static final String SAVE_MESSAGE_DIR = "Saved Messages";
     // UI controls
     @FXML
     private SplitPane topicsMessagesPane;
@@ -215,6 +220,37 @@ public class KafkaPaneController implements Initializable, KafkaListener {
 
         messagesTable.getSelectionModel().selectedItemProperty()
                 .addListener((observableValue, oldMessage, newMessage) -> displayMessage(newMessage));
+
+        var messagesContextMenu = new ContextMenu();
+        var saveItem = new MenuItem("Save to disk");
+        final String format = ".dat";
+        saveItem.setOnAction(event -> {
+            var messages = getSelectedMessages();
+            save(messages, format);
+        });
+        messagesContextMenu.getItems().add(saveItem);
+        messagesTable.setContextMenu(messagesContextMenu);
+    }
+
+    private void save(List<MessageModel> messages, String format) {
+        messages.forEach(message -> save(message, format));
+    }
+
+    private void save(MessageModel message, String format) {
+        var path = Paths.get(SAVE_MESSAGE_DIR, this.id, message.getRecord().topic(), "" + message.getPartition(),
+                "" + message.getOffset() + format);
+
+        try {
+            File file = new File(path.toUri());
+            file.getParentFile().mkdirs();
+            Files.write(path, message.getRecord().value());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private List<MessageModel> getSelectedMessages() {
+        return messagesTable.getSelectionModel().getSelectedItems();
     }
 
     private void setupMessagesToolbar() {

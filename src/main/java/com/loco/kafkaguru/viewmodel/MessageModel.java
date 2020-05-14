@@ -28,6 +28,7 @@ public class MessageModel {
     String timestampPattern = "E, dd MMM yyyy HH:mm:ss";
     SimpleDateFormat simpleDateFormat = new SimpleDateFormat(timestampPattern);
     private MessageFormatter formatter;
+
     private ConsumerRecord<String, byte[]> record;
 
     public MessageModel(int index, ConsumerRecord<String, byte[]> record, MessageFormatter formatter) {
@@ -100,6 +101,10 @@ public class MessageModel {
 
     public String getMessageBody() {
         return messageBody.get();
+    }
+
+    public ConsumerRecord<String, byte[]> getRecord() {
+        return record;
     }
 
     public void setFormatter(MessageFormatter formatter) {
