@@ -60,7 +60,18 @@ public class KafkaInstance {
 
     public Map<String, List<PartitionInfo>> refreshTopics() throws KafkaException {
         synchronized (consumer) {
-            return consumer.listTopics(Duration.ofSeconds(5));
+            var remainingTries = 3;
+            do {
+                try {
+                    return consumer.listTopics(Duration.ofSeconds(5));
+                } catch (KafkaException e) {
+                    --remainingTries;
+                    log.warn("Failed to obtain topics from Kafka. Remaining tries = " + remainingTries);
+                    if (remainingTries == 0){
+                        throw e;
+                    }
+                }
+            } while (true);
         }
     }
 
@@ -80,11 +91,11 @@ public class KafkaInstance {
     }
 
     public void connectAsync(KafkaListener listener) {
-        log.error("Starting connection thread");
+        log.info("Starting connection thread");
         new Thread(new Runnable() {
             @Override
             public void run() {
-                log.error("Started connection thread");
+                log.info("Started connection thread");
                 try {
                     connect();
                     listener.connected(true);
@@ -93,10 +104,10 @@ public class KafkaInstance {
                     listener.connected(false);
                 }
                 try {
-                    log.error("Obtaining topics from kafka ");
+                    log.info("Obtaining topics from kafka ");
                     var topics = refreshTopics();
                     listener.topicsUpdated(topics);
-                    log.error("Obtained topics from kafka ");
+                    log.info("Obtained topics from kafka ");
                 } catch (KafkaException e) {
                     log.error("Failed to fetch topics from kafka for {}", url, e);
                     listener.topicsUpdated(null);

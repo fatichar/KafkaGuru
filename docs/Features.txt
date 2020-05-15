@@ -4,7 +4,7 @@
   - Make KafkaReader stateful
     - keep the loaded messages in memory, even when some other offsets are loaded
     - only messages not in cache need to be fetched from kafka
-    - two types of cache - memry and disk
+    - two types of cache - memory and disk
     - max cache size for both - take from preferences
 
 - User Registration
