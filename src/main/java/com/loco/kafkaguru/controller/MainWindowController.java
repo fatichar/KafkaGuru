@@ -2,7 +2,7 @@ package com.loco.kafkaguru.controller;
 
 import com.loco.kafkaguru.core.PluginLoader;
 import com.loco.kafkaguru.model.KafkaClusterInfo;
-import com.loco.kafkaguru.view.KafkaPane;
+import com.loco.kafkaguru.view.KafkaView;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -34,7 +34,7 @@ public class MainWindowController implements Initializable, ControllerListener {
     private TabPane tabPane;
 
     private Preferences preferences;
-    private Map<String, KafkaPaneController> controllers = new HashMap<>();
+    private Map<String, KafkaViewController> controllers = new HashMap<>();
     // private Map<String, Tab> tabs = new HashMap<>();
     private Map<String, KafkaClusterInfo> clusters = new HashMap<>();
 
@@ -81,9 +81,9 @@ public class MainWindowController implements Initializable, ControllerListener {
         return new KafkaClusterInfo(clusterName, url);
     }
 
-    private Map<String, KafkaPaneController> createControllers(Preferences preferences,
+    private Map<String, KafkaViewController> createControllers(Preferences preferences,
             Map<String, KafkaClusterInfo> clusters) {
-        var controllers = new TreeMap<String, KafkaPaneController>();
+        var controllers = new TreeMap<String, KafkaViewController>();
         List<Preferences> tabNodes = null;
         try {
             var tabsNode = preferences.node("tabs");
@@ -111,7 +111,7 @@ public class MainWindowController implements Initializable, ControllerListener {
                 log.error("Too many tabs for cluster {}", clusterName);
                 continue;
             }
-            var controller = new KafkaPaneController(cluster, this, tabNode);
+            var controller = new KafkaViewController(cluster, this, tabNode);
             controllers.put(controllerId, controller);
         }
 
@@ -137,12 +137,12 @@ public class MainWindowController implements Initializable, ControllerListener {
         return preferences.get("cluster_id", null);
     }
 
-    private Tab createTab(KafkaPaneController controller) {
-        KafkaPane kafkaPane = new KafkaPane(controller);
+    private Tab createTab(KafkaViewController controller) {
+        KafkaView kafkaView = new KafkaView(controller);
 
         Tab tab = new Tab(controller.getId());
         tab.setId(controller.getId());
-        tab.setContent(kafkaPane);
+        tab.setContent(kafkaView);
 
         return tab;
     }
@@ -210,11 +210,11 @@ public class MainWindowController implements Initializable, ControllerListener {
         tabPane.getTabs().add(tab);
     }
 
-    private KafkaPaneController createController(KafkaClusterInfo cluster) {
+    private KafkaViewController createController(KafkaClusterInfo cluster) {
         var controllerId = createControllerId(cluster);
         var tabPreferences = preferences.node("tabs").node(controllerId);
         tabPreferences.put("cluster_id", cluster.getName());
-        var controller = new KafkaPaneController(cluster, this, tabPreferences);
+        var controller = new KafkaViewController(cluster, this, tabPreferences);
         return controller;
     }
 
@@ -317,7 +317,7 @@ public class MainWindowController implements Initializable, ControllerListener {
     }
 
     @Override
-    public void destroy(KafkaPaneController controller) {
+    public void destroy(KafkaViewController controller) {
         tabPane.getTabs().remove(controller.getId());
         controllers.remove(controller);
     }
@@ -326,7 +326,7 @@ public class MainWindowController implements Initializable, ControllerListener {
     public void savePreference(ArrayList<String> nodeNames, String key, String value) {
         Preferences leafNode = preferences;
 
-        for (var nodeName : nodeNames){
+        for (var nodeName : nodeNames) {
             leafNode = leafNode.node(nodeName);
         }
 
@@ -339,7 +339,7 @@ public class MainWindowController implements Initializable, ControllerListener {
     public String getPreference(ArrayList<String> nodeNames, String key) {
         Preferences leafNode = preferences;
 
-        for (var nodeName : nodeNames){
+        for (var nodeName : nodeNames) {
             leafNode = leafNode.node(nodeName);
         }
 

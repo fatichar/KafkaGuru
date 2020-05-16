@@ -1,6 +1,6 @@
 package com.loco.kafkaguru.core;
 
-import com.loco.kafkaguru.core.listeners.KafkaListener;
+import com.loco.kafkaguru.core.listeners.KafkaMessagesListener;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
@@ -29,7 +29,7 @@ public class KafkaReader {
     }
 
     private void fetchMessages(@NonNull List<TopicPartition> topicPartitions, int maxMessageCount, long fetchFrom,
-            KafkaListener listener, Object sender) {
+                               KafkaMessagesListener listener, Object sender) {
         log.info("Getting messages");
 
         if (topicPartitions.isEmpty()) {
@@ -126,7 +126,7 @@ public class KafkaReader {
     }
 
     public void getMessagesAsync(List<TopicPartition> topicPartitions, int limit, long fetchFrom,
-            KafkaListener listener, Object sender) {
+                                 KafkaMessagesListener listener, Object sender) {
         log.info("In getMessagesAsync()");
         new Thread(new Runnable() {
             @Override

@@ -1,6 +1,7 @@
 package com.loco.kafkaguru.core;
 
-import com.loco.kafkaguru.core.listeners.KafkaListener;
+import com.loco.kafkaguru.core.listeners.KafkaConnectionListener;
+import com.loco.kafkaguru.core.listeners.KafkaTopicsListener;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
@@ -90,28 +91,31 @@ public class KafkaInstance {
         return new KafkaConsumer<String, byte[]>(this.properties);
     }
 
-    public void connectAsync(KafkaListener listener) {
+    public void connectAsync(KafkaConnectionListener listener) {
         log.info("Starting connection thread");
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                log.info("Started connection thread");
-                try {
-                    connect();
-                    listener.connected(true);
-                } catch (KafkaException | UnknownHostException e) {
-                    log.error("Failed to connect to kafka ", e);
-                    listener.connected(false);
-                }
-                try {
-                    log.info("Obtaining topics from kafka ");
-                    var topics = refreshTopics();
-                    listener.topicsUpdated(topics);
-                    log.info("Obtained topics from kafka ");
-                } catch (KafkaException e) {
-                    log.error("Failed to fetch topics from kafka for {}", url, e);
-                    listener.topicsUpdated(null);
-                }
+        new Thread(() -> {
+            log.info("Started connection thread");
+            try {
+                connect();
+                listener.connected(true);
+            } catch (KafkaException | UnknownHostException e) {
+                log.error("Failed to connect to kafka ", e);
+                listener.connected(false);
+            }
+        }).start();
+    }
+
+    public void refreshTopicsAsync(KafkaTopicsListener listener) {
+        log.info("Starting connection thread");
+        new Thread(() -> {
+            try {
+                log.info("Obtaining topics from kafka ");
+                var topics = refreshTopics();
+                listener.topicsUpdated(topics);
+                log.info("Obtained topics from kafka ");
+            } catch (KafkaException e) {
+                log.error("Failed to fetch topics from kafka for {}", url, e);
+                listener.topicsUpdated(null);
             }
         }).start();
     }

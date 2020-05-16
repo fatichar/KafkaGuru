@@ -46,12 +46,8 @@ public class MessageModel {
     }
 
     private String summarize(String text) {
-        var summary =
-                text == null
-                        ? ""
-                        : text.length() > MAX_MESSAGE_SUMMARY_LEN
-                                ? text.substring(0, MAX_MESSAGE_SUMMARY_LEN)
-                                : text;
+        var summary = text == null ? ""
+                : text.length() > MAX_MESSAGE_SUMMARY_LEN ? text.substring(0, MAX_MESSAGE_SUMMARY_LEN) : text;
 
         while (summary.contains("\n") || summary.contains("\r")) {
             summary = summary.replace("\n", " ").replace("\r", " ");

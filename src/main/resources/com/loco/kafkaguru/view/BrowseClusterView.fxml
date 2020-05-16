@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<fx:root type="AnchorPane"
+    xmlns="http://javafx.com/javafx"
+    xmlns:fx="http://javafx.com/fxml"
+            prefHeight="160.0" prefWidth="200.0">
+    <children>
+        <TitledPane fx:id="topicsPane" expanded="true" maxHeight="1.7976931348623157E308" text="Topics"
+                            AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <content>
+                <TreeView fx:id="topicsTree" prefHeight="400.0" prefWidth="189.0" showRoot="false" />
+            </content>
+        </TitledPane>
+    </children>
+</fx:root>
