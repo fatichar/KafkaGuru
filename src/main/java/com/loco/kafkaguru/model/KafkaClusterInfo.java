@@ -1,14 +1,18 @@
 package com.loco.kafkaguru.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.util.UUID;
+
 @Data
+@AllArgsConstructor
 public class KafkaClusterInfo {
-    private final String name;
-    private final String url;
+    private String id;
+    private String name;
+    private String url;
 
     public KafkaClusterInfo(String name, String url) {
-        this.name = name;
-        this.url = url;
+        this(UUID.randomUUID().toString(), name, url);
     }
 }

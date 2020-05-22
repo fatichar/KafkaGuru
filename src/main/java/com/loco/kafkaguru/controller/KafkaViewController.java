@@ -3,11 +3,9 @@ package com.loco.kafkaguru.controller;
 import com.loco.kafkaguru.core.KafkaInstance;
 import com.loco.kafkaguru.core.KafkaReader;
 import com.loco.kafkaguru.core.listeners.KafkaConnectionListener;
-import com.loco.kafkaguru.model.KafkaClusterInfo;
 import com.loco.kafkaguru.view.BrowseClusterItemView;
 import com.loco.kafkaguru.view.BrowseClusterView;
 import com.loco.kafkaguru.viewmodel.*;
-import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
@@ -16,7 +14,6 @@ import javafx.scene.control.*;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.kafka.common.PartitionInfo;
 
 import java.net.URL;
 import java.util.*;
@@ -34,11 +31,7 @@ public class KafkaViewController implements Initializable, KafkaConnectionListen
     private SplitPane topicsMessagesPane;
 
     // data fields
-    private KafkaClusterInfo cluster;
     private KafkaInstance kafkaInstance;
-
-    private KafkaReader kafkaReader;
-    private ClusterNode clusterNode;
 
     private ControllerListener parent;
     private Preferences preferences;
@@ -48,37 +41,35 @@ public class KafkaViewController implements Initializable, KafkaConnectionListen
     private DoubleProperty topicMessageDividerPos;
 
     @Getter
-    private String id;
+    private String name;
     private ChangeListener<Number> dividerListener;
 
-    public KafkaViewController(KafkaClusterInfo cluster, ControllerListener parent, Preferences preferences) {
-        id = preferences.name();
+    public KafkaViewController(KafkaInstance kafkaInstance, ControllerListener parent, Preferences preferences) {
+        name = preferences.name();
         this.parent = parent;
         this.preferences = preferences;
-        if (StringUtils.isEmpty(cluster.getName())) {
-            throw new IllegalArgumentException("name is not specified");
-        }
-        if (StringUtils.isEmpty(cluster.getUrl())) {
-            throw new IllegalArgumentException("url is not specified");
+        if (kafkaInstance == null) {
+            throw new IllegalArgumentException("cluster is null");
         }
 
-        this.cluster = cluster;
+        this.kafkaInstance = kafkaInstance;
+        kafkaInstance.addConnectionListener(this);
+        var kafkaReader = new KafkaReader(kafkaInstance);
+
+        browseClusterController = new BrowseClusterViewController(kafkaReader, preferences, parent);
+        browseClusterItemController = new BrowseClusterItemViewController(kafkaReader, preferences);
+
+        browseClusterController.addItemSelectionListener(browseClusterItemController);
+        browseClusterController.addItemSelectionListener(this);
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        setupKafka();
-
-        browseClusterController = new BrowseClusterViewController(preferences, parent, clusterNode);
         var browseClusterView = new BrowseClusterView(browseClusterController);
         topicsMessagesPane.getItems().add(browseClusterView);
 
-        browseClusterItemController = new BrowseClusterItemViewController(kafkaReader, preferences);
         var browseClusterItemView = new BrowseClusterItemView(browseClusterItemController);
         topicsMessagesPane.getItems().add(browseClusterItemView);
-
-        browseClusterController.addItemSelectionListener(browseClusterItemController);
-        browseClusterController.addItemSelectionListener(this);
 
         topicMessageDividerPos = topicsMessagesPane.getDividers().get(0).positionProperty();
         dividerListener = (observable, oldValue, newValue) -> preferences.putDouble("topic_message_divider_pos",
@@ -87,7 +78,9 @@ public class KafkaViewController implements Initializable, KafkaConnectionListen
         topicMessageDividerPos.set(lastDividerPos);
 
         // TODO report connection error
-        kafkaInstance.connectAsync(this);
+        if (!StringUtils.isEmpty(kafkaInstance.getUrl())){
+            kafkaInstance.connectAsync();
+        }
     }
 
     private void removeClusterNode() {
@@ -106,17 +99,11 @@ public class KafkaViewController implements Initializable, KafkaConnectionListen
         }
     }
 
-    private void setupKafka() {
-        kafkaReader = new KafkaReader(cluster.getName(), cluster.getUrl());
-        kafkaInstance = kafkaReader.getKafkaInstance();
-        clusterNode = new ClusterNode(kafkaInstance);
-    }
-
     @Override
-    public void connected(boolean really) {
+    public void connected(String clusterId, boolean really) {
         if (really) {
             this.connected = true;
-            kafkaReader.getKafkaInstance().refreshTopicsAsync(topics -> {
+            kafkaInstance.refreshTopicsAsync(topics -> {
                 topicMessageDividerPos.removeListener(dividerListener);
                 var lastDividerPos = preferences.getDouble("topic_message_divider_pos", 0.1);
                 browseClusterController.topicsUpdated(topics);
@@ -124,8 +111,17 @@ public class KafkaViewController implements Initializable, KafkaConnectionListen
                 topicMessageDividerPos.addListener(dividerListener);
             });
         } else {
-            Platform.runLater(() -> removeClusterNode());
+//            Platform.runLater(() -> removeClusterNode());
         }
+    }
+
+    @Override
+    public void notifyUrlChange(String name, String oldUrl, String newUrl) {
+
+    }
+
+    @Override
+    public void notifyNameChange(String id, String oldName, String newName) {
     }
 
     public void preferenceUpdated(ArrayList<String> nodeNames, String key, String value) {
@@ -153,14 +149,18 @@ public class KafkaViewController implements Initializable, KafkaConnectionListen
     private void saveSelectionPreference(AbstractNode selectedNode) {
         var selectedTopic = "";
         var selectedPartition = -1;
-        if (selectedNode instanceof TopicNode) {
-            selectedTopic = ((TopicNode) selectedNode).getTopic();
-        } else {
-            var partitionNode = (PartitionNode) selectedNode;
-            selectedPartition = partitionNode.getPartition().partition();
-            selectedTopic = partitionNode.getPartition().topic();
+        switch (selectedNode.getType()){
+            case CLUSTER:
+                return;
+            case TOPIC:
+                selectedTopic = ((TopicNode) selectedNode).getTopic();
+                break;
+            case PARTITION:
+                var partitionNode = (PartitionNode) selectedNode;
+                selectedPartition = partitionNode.getPartition().partition();
+                selectedTopic = partitionNode.getPartition().topic();
+                break;
         }
-
         preferences.put("selected_topic", selectedTopic);
         preferences.putInt("selected_partition", selectedPartition);
     }

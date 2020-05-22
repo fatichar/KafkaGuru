@@ -1,6 +1,8 @@
 package com.loco.kafkaguru.controller;
 
+import com.loco.kafkaguru.core.KafkaInstance;
 import com.loco.kafkaguru.core.PluginLoader;
+import com.loco.kafkaguru.core.listeners.KafkaConnectionListener;
 import com.loco.kafkaguru.model.KafkaClusterInfo;
 import com.loco.kafkaguru.view.KafkaView;
 import javafx.event.ActionEvent;
@@ -20,7 +22,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @Log4j2
-public class MainWindowController implements Initializable, ControllerListener {
+public class MainWindowController implements Initializable, ControllerListener, KafkaConnectionListener {
     @FXML
     private MenuItem newClusterMenuItem;
     @FXML
@@ -34,9 +36,10 @@ public class MainWindowController implements Initializable, ControllerListener {
     private TabPane tabPane;
 
     private Preferences preferences;
-    private Map<String, KafkaViewController> controllers = new HashMap<>();
-    // private Map<String, Tab> tabs = new HashMap<>();
+    // key = cluster id
     private Map<String, KafkaClusterInfo> clusters = new HashMap<>();
+    // key = controller id
+    private Map<String, KafkaViewController> controllers = new HashMap<>();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -61,11 +64,11 @@ public class MainWindowController implements Initializable, ControllerListener {
     private Map<String, KafkaClusterInfo> createClusters(Preferences appPreferences) {
         try {
             var clustersNode = appPreferences.node("clusters");
-            var clusterNames = clustersNode.childrenNames();
-            var clusters = Arrays.stream(clusterNames) //
-                    .map(clusterName -> clustersNode.node(clusterName)) //
+            var clusterIds = clustersNode.childrenNames();
+            var clusters = Arrays.stream(clusterIds) //
+                    .map(clusterId -> clustersNode.node(clusterId)) //
                     .map(this::createCluster)
-                    .collect(Collectors.toMap((cluster -> cluster.getName()), (cluster -> cluster)));
+                    .collect(Collectors.toMap((cluster -> cluster.getId()), (cluster -> cluster)));
 
             return clusters;
         } catch (BackingStoreException e) {
@@ -75,10 +78,11 @@ public class MainWindowController implements Initializable, ControllerListener {
     }
 
     private KafkaClusterInfo createCluster(Preferences preferences) {
-        var clusterName = preferences.name();
+        var clusterId = preferences.name();
+        var name = preferences.get("name", null);
         var url = preferences.get("url", null);
 
-        return new KafkaClusterInfo(clusterName, url);
+        return new KafkaClusterInfo(clusterId, name, url);
     }
 
     private Map<String, KafkaViewController> createControllers(Preferences preferences,
@@ -97,28 +101,29 @@ public class MainWindowController implements Initializable, ControllerListener {
         }
 
         for (var tabNode : tabNodes) {
-            var clusterName = getclusterName(tabNode);
-            var cluster = clusters.get(clusterName);
+            var clusterId = getClusterId(tabNode);
+            var cluster = clusters.get(clusterId);
             if (cluster == null) {
                 log.error(
                         "Tab with name {} could not be loaded, because "
-                                + "the cluster {} could not be found in saved preferences",
-                        tabNode.name(), clusterName);
+                                + "the associated cluster could not be found in saved preferences",
+                        tabNode.name(), clusterId);
                 continue;
             }
             var controllerId = tabNode.name();
             if (controllerId == null) {
-                log.error("Too many tabs for cluster {}", clusterName);
+                log.error("Too many tabs for cluster {}", clusterId);
                 continue;
             }
-            var controller = new KafkaViewController(cluster, this, tabNode);
+            var kafkaInstance = createKafkaInstance(cluster);
+            var controller = new KafkaViewController(kafkaInstance, this, tabNode);
             controllers.put(controllerId, controller);
         }
 
         return controllers;
     }
 
-    private String createControllerId(KafkaClusterInfo cluster) {
+    private String createControllerName(KafkaClusterInfo cluster) {
         var clusterName = cluster.getName();
         var controllerId = clusterName;
         byte i = 2;
@@ -133,45 +138,66 @@ public class MainWindowController implements Initializable, ControllerListener {
         return null;
     }
 
-    private String getclusterName(Preferences preferences) {
+    private String getClusterId(Preferences preferences) {
         return preferences.get("cluster_id", null);
     }
 
     private Tab createTab(KafkaViewController controller) {
         KafkaView kafkaView = new KafkaView(controller);
 
-        Tab tab = new Tab(controller.getId());
-        tab.setId(controller.getId());
+        Tab tab = new Tab(controller.getName());
+        tab.setId(controller.getName());
+        tab.setUserData(controller);
         tab.setContent(kafkaView);
 
         return tab;
     }
 
     private void createMenuItems(Map<String, KafkaClusterInfo> clusters) {
-        clusters.keySet().forEach(clusterName -> {
-            var cluster = clusters.get(clusterName);
-
+        clusters.values().forEach(cluster -> {
             createOpenClusterMenuItem(cluster);
-
             createRemoveClusterMenuItem(cluster);
         });
     }
 
     private void createOpenClusterMenuItem(KafkaClusterInfo cluster) {
         var openClusterItem = new MenuItem(cluster.getName());
-        openClusterItem.setId(cluster.getName());
+        openClusterItem.setId(cluster.getId());
         openClusterItem.setOnAction(this::onOpenCluster);
         openClusterMenu.getItems().add(openClusterItem);
     }
 
     private void createRemoveClusterMenuItem(KafkaClusterInfo cluster) {
         var removeClusterItem = new MenuItem(cluster.getName());
-        removeClusterItem.setId(cluster.getName());
+        removeClusterItem.setId(cluster.getId());
         removeClusterItem.setOnAction(this::onRemoveCluster);
         removeClusterMenu.getItems().add(removeClusterItem);
     }
 
     public void onNewCluster(ActionEvent actionEvent) {
+        KafkaClusterInfo cluster = new KafkaClusterInfo(suggestClusterName(), "");
+
+        clusters.put(cluster.getName(), cluster);
+
+        var controller = createController(cluster);
+        controllers.put(controller.getName(), controller);
+
+        Tab newTab = createTab(controller);
+        tabPane.getTabs().add(newTab);
+        tabPane.getSelectionModel().select(newTab);
+    }
+
+    private String suggestClusterName() {
+        var name = "new cluster";
+        for (int i = 1; true; ++i){
+            if (!clusters.containsKey(name)){
+                return name;
+            }
+            name = "new cluster " + i;
+        }
+    }
+
+    public void onNewCluster_(ActionEvent actionEvent) {
         KafkaClusterInfo cluster = getNewClusterInfo();
         if (cluster == null) {
             return;
@@ -183,7 +209,7 @@ public class MainWindowController implements Initializable, ControllerListener {
         createRemoveClusterMenuItem(cluster);
 
         var controller = createController(cluster);
-        controllers.put(controller.getId(), controller);
+        controllers.put(controller.getName(), controller);
 
         Tab newTab = createTab(controller);
         tabPane.getTabs().add(newTab);
@@ -191,7 +217,8 @@ public class MainWindowController implements Initializable, ControllerListener {
     }
 
     private Preferences save(KafkaClusterInfo cluster) {
-        var childPreferences = preferences.node("clusters").node(cluster.getName());
+        var childPreferences = preferences.node("clusters").node(cluster.getId());
+        childPreferences.put("name", cluster.getName());
         childPreferences.put("url", cluster.getUrl());
         savePreferences(childPreferences);
         return childPreferences;
@@ -200,22 +227,29 @@ public class MainWindowController implements Initializable, ControllerListener {
     public void onOpenCluster(ActionEvent event) {
         var menuItem = (MenuItem) event.getSource();
 
-        var clusterName = menuItem.getId();
-        var cluster = clusters.get(clusterName);
+        var clusterId = menuItem.getId();
+        var cluster = clusters.get(clusterId);
 
         var controller = createController(cluster);
-        controllers.put(controller.getId(), controller);
+        controllers.put(controller.getName(), controller);
 
         var tab = createTab(controller);
         tabPane.getTabs().add(tab);
     }
 
     private KafkaViewController createController(KafkaClusterInfo cluster) {
-        var controllerId = createControllerId(cluster);
-        var tabPreferences = preferences.node("tabs").node(controllerId);
-        tabPreferences.put("cluster_id", cluster.getName());
-        var controller = new KafkaViewController(cluster, this, tabPreferences);
+        var controllerName = createControllerName(cluster);
+        var tabPreferences = preferences.node("tabs").node(controllerName);
+        tabPreferences.put("cluster_id", cluster.getId());
+        var kafkaInstance = createKafkaInstance(cluster);
+        var controller = new KafkaViewController(kafkaInstance, this, tabPreferences);
         return controller;
+    }
+
+    private KafkaInstance createKafkaInstance(KafkaClusterInfo cluster) {
+        var kafkaInstance = new KafkaInstance(cluster);
+        kafkaInstance.addConnectionListener(this);
+        return kafkaInstance;
     }
 
     public void onRemoveCluster(ActionEvent event) {
@@ -318,7 +352,7 @@ public class MainWindowController implements Initializable, ControllerListener {
 
     @Override
     public void destroy(KafkaViewController controller) {
-        tabPane.getTabs().remove(controller.getId());
+        tabPane.getTabs().remove(controller.getName());
         controllers.remove(controller);
     }
 
@@ -358,5 +392,61 @@ public class MainWindowController implements Initializable, ControllerListener {
             e.printStackTrace();
             new Alert(Alert.AlertType.ERROR, "Failed to save preferences").showAndWait();
         }
+    }
+
+    @Override
+    public void connected(String name, boolean really) {
+        var cluster = clusters.get(name);
+        if (cluster == null){
+            return;
+        }
+        save(cluster);
+    }
+
+    @Override
+    public void notifyUrlChange(String name, String oldUrl, String newUrl) {
+        var cluster = clusters.get(name);
+        if (cluster == null){
+            cluster = new KafkaClusterInfo(name, newUrl);
+            clusters.put(name, cluster);
+        } else {
+            cluster.setUrl(newUrl);
+        }
+    }
+
+    @Override
+    public void notifyNameChange(String id, String oldName, String newName) {
+        var cluster = clusters.get(oldName);
+        if (cluster == null){
+            cluster = new KafkaClusterInfo(oldName, "");
+        } else {
+            cluster.setName(newName);
+            clusters.remove(oldName);
+        }
+        clusters.put(newName, cluster);
+
+        this.controllers.keySet().stream()
+                .forEach(controllerName -> {
+                    var clusterName = getClusterName(controllerName);
+                    if (controllerName.equals(clusterName)){
+                        var controller = this.controllers.remove(controllerName);
+                        var newControllerName = newName;
+                        this.controllers.put(newControllerName, controller);
+                        var controllerTab = tabPane.getTabs().stream().filter(tab -> tab.getUserData().equals(controller))
+                        .findFirst().orElse(null);
+                        if (controllerTab != null){
+                            controllerTab.setText(newControllerName);
+                        }
+                    }
+                });
+    }
+
+    private String getClusterName(String controllerName) {
+        var separatorIndex = controllerName.indexOf('(');
+        if (separatorIndex < 0){
+            return controllerName;
+        }
+
+        return controllerName.substring(0, separatorIndex);
     }
 }

@@ -1,16 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import java.lang.*?>
+<?import javafx.collections.*?>
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.collections.FXCollections?>
-<?import javafx.scene.text.Font?>
-<fx:root type="AnchorPane"
-    xmlns="http://javafx.com/javafx"
-    xmlns:fx="http://javafx.com/fxml"
-            prefHeight="400.0" prefWidth="600.0">
+<?import javafx.scene.text.*?>
+
+<fx:root prefHeight="400.0" prefWidth="600.0" type="AnchorPane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
     <children>
-        <SplitPane fx:id="messagesSplitPane" dividerPositions="0.6" orientation="VERTICAL" prefHeight="398.0" prefWidth="521.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <VBox fx:id="mainLayout" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <AnchorPane fx:id="clusterDetailsPane" prefHeight="398.0">
+            <children>
+               <GridPane prefHeight="116.0" prefWidth="566.0" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="50.0">
+                 <columnConstraints>
+                   <ColumnConstraints hgrow="SOMETIMES" maxWidth="288.0" minWidth="10.0" prefWidth="92.99999237060547" />
+                   <ColumnConstraints hgrow="SOMETIMES" maxWidth="506.6666742960613" minWidth="10.0" prefWidth="506.6666742960613" />
+                 </columnConstraints>
+                 <rowConstraints>
+                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                 </rowConstraints>
+                  <children>
+                     <Label text="Cluster Name" />
+                     <Label text="Kafka URL" GridPane.rowIndex="1" />
+                     <TextField fx:id="clusterNameField" GridPane.columnIndex="1" />
+                     <TextField fx:id="kafkaUrlField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                     <Button fx:id="connectButton" mnemonicParsing="false" text="Connect" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="2" />
+                  </children>
+               </GridPane>
+            </children></AnchorPane>
+        <SplitPane fx:id="messagesSplitPane" dividerPositions="0.6" maxHeight="1.7976931348623157E308" orientation="VERTICAL" VBox.vgrow="ALWAYS">
             <items>
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                     <children>
@@ -85,5 +106,6 @@
                 </AnchorPane>
             </items>
         </SplitPane>
+        </VBox>
     </children>
 </fx:root>

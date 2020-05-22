@@ -49,6 +49,11 @@ public class PartitionNode implements AbstractNode {
         this.messages.addAll(messages);
     }
 
+    @Override
+    public NodeType getType() {
+        return NodeType.PARTITION;
+    }
+
     public void setFormatter(MessageFormatter formatter) {
         log.info("In partition " + topicPartition.toString());
         log.info("existing formatter " + (this.formatter == null ? "null" : this.formatter.name()));

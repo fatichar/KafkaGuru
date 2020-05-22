@@ -1,4 +1,7 @@
 - Core kafka
+  - Cluster info view
+  - Don't destroy tab if connection failed
+  - 'Connect' button
   - Load topics only once per cluster
   - Save topics in config
   - Make KafkaReader stateful
@@ -6,6 +9,9 @@
     - only messages not in cache need to be fetched from kafka
     - two types of cache - memory and disk
     - max cache size for both - take from preferences
+    - Prefetch
+      - Run listener in background to keep updating cache with latest messages
+      - Setting to include/exclude topics for prefetch
 
 - User Registration
   - Sync settings

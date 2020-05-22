@@ -3,6 +3,7 @@ package com.loco.kafkaguru.controller;
 import com.loco.kafkaguru.MessageFormatter;
 import com.loco.kafkaguru.core.KafkaReader;
 import com.loco.kafkaguru.core.PluginLoader;
+import com.loco.kafkaguru.core.listeners.KafkaConnectionListener;
 import com.loco.kafkaguru.core.listeners.KafkaMessagesListener;
 import com.loco.kafkaguru.viewmodel.*;
 import javafx.application.Platform;
@@ -21,16 +22,14 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.VBox;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -41,8 +40,22 @@ import java.util.stream.Collectors;
 
 @Log4j2
 public class BrowseClusterItemViewController
-        implements Initializable, ClusterItemSelectionListener, KafkaMessagesListener {
+        implements Initializable, ClusterItemSelectionListener, KafkaMessagesListener, KafkaConnectionListener {
     private static final String SAVE_MESSAGE_DIR = "Saved Messages";
+
+    @FXML
+    private VBox mainLayout;
+    @FXML
+    private AnchorPane clusterDetailsPane;
+    @FXML
+    private SplitPane messagesSplitPane;
+
+    @FXML
+    private TextField clusterNameField;
+    @FXML
+    private TextField kafkaUrlField;
+    @FXML
+    private Button connectButton;
 
     // messages toolbar
     @FXML
@@ -89,11 +102,22 @@ public class BrowseClusterItemViewController
     public BrowseClusterItemViewController(KafkaReader kafkaReader, Preferences preferences) {
         this.kafkaReader = kafkaReader;
         this.preferences = preferences;
+        kafkaReader.getKafkaInstance().addConnectionListener(this);
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        setupClusterView();
         setupMessagesView();
+
+        clusterDetailsPane.setVisible(false);
+        messagesSplitPane.setVisible(false);
+    }
+
+    private void setupClusterView() {
+        clusterNameField.setText(kafkaReader.getKafkaInstance().getName());
+        kafkaUrlField.setText(kafkaReader.getKafkaInstance().getUrl());
+        connectButton.setOnAction(this::onConnectButtonClick);
     }
 
     private void setupMessagesView() {
@@ -158,6 +182,43 @@ public class BrowseClusterItemViewController
         });
     }
 
+    private void onConnectButtonClick(ActionEvent actionEvent) {
+        if (isNameChanged()) {
+            kafkaReader.getKafkaInstance().setName(clusterNameField.getText());
+        }
+        if (isUrlChanged()) {
+            kafkaReader.getKafkaInstance().setUrl(kafkaUrlField.getText());
+        }
+        kafkaReader.getKafkaInstance().connectAsync();
+    }
+
+    private boolean isNameChanged() {
+        var old = kafkaReader.getKafkaInstance().getName();
+        var current = clusterNameField.getText();
+        return !StringUtils.equals(old, current);
+    }
+
+    private boolean isUrlChanged() {
+        var old = kafkaReader.getKafkaInstance().getUrl();
+        var current = kafkaUrlField.getText();
+        return !StringUtils.equals(old, current);
+    }
+
+    @Override
+    public void connected(boolean really) {
+        connectButton.setDisable(really);
+    }
+
+    @Override
+    public void notifyUrlChange(String name, String oldUrl, String newUrl) {
+        kafkaUrlField.setText(newUrl);
+    }
+
+    @Override
+    public void notifyNameChange(String id, String oldName, String newName) {
+        clusterNameField.setText(newName);
+    }
+
     @Override
     public void currentNodeChanged(AbstractNode selectedNode) {
         if (selectedNode == null) {
@@ -167,13 +228,31 @@ public class BrowseClusterItemViewController
         this.selectedNode = selectedNode;
 
         if (followTreeSelection.get()) {
-            messagesModel.setMessages(selectedNode.getMessages());
-            currentNode = selectedNode;
-            if (loading) {
-                currentNodeStale = true;
-            } else {
-                fetchMessages(selectedNode);
-            }
+            updateView(selectedNode);
+        }
+    }
+
+    private void updateView(AbstractNode selectedNode) {
+        switch (selectedNode.getType()) {
+            case CLUSTER:
+                mainLayout.getChildren().clear();
+                mainLayout.getChildren().add(clusterDetailsPane);
+                clusterDetailsPane.setVisible(true);
+//                messagesSplitPane.setVisible(false);
+                break;
+            case TOPIC:
+            case PARTITION:
+                mainLayout.getChildren().clear();
+                mainLayout.getChildren().add(messagesSplitPane);
+//                clusterDetailsPane.setVisible(false);
+                messagesSplitPane.setVisible(true);
+                messagesModel.setMessages(selectedNode.getMessages());
+                currentNode = selectedNode;
+                if (loading) {
+                    currentNodeStale = true;
+                } else {
+                    fetchMessages(selectedNode);
+                }
         }
     }
 

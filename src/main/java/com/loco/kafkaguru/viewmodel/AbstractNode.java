@@ -8,4 +8,6 @@ public interface AbstractNode {
     void setMessages(List<MessageModel> messages);
 
     void addMessages(List<MessageModel> messages);
+
+    NodeType getType();
 }

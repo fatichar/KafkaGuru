@@ -1,7 +1,9 @@
 package com.loco.kafkaguru.controller;
 
 import com.loco.kafkaguru.MessageFormatter;
+import com.loco.kafkaguru.core.KafkaReader;
 import com.loco.kafkaguru.core.PluginLoader;
+import com.loco.kafkaguru.core.listeners.KafkaConnectionListener;
 import com.loco.kafkaguru.core.listeners.KafkaTopicsListener;
 import com.loco.kafkaguru.viewmodel.AbstractNode;
 import com.loco.kafkaguru.viewmodel.ClusterNode;
@@ -26,7 +28,7 @@ import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
 @Log4j2
-public class BrowseClusterViewController implements Initializable, KafkaTopicsListener {
+public class BrowseClusterViewController implements Initializable, KafkaTopicsListener, KafkaConnectionListener {
     @FXML
     private TitledPane topicsPane;
     @FXML
@@ -35,6 +37,7 @@ public class BrowseClusterViewController implements Initializable, KafkaTopicsLi
     private CheckBox followSelectionCheck;
 
     private ContextMenu topicContextMenu;
+    private KafkaReader kafkaReader;
     private Preferences preferences;
 
     private List<ClusterItemSelectionListener> treeSelectionListeners = new ArrayList<>();
@@ -44,10 +47,13 @@ public class BrowseClusterViewController implements Initializable, KafkaTopicsLi
     private ControllerListener parent;
     private AbstractNode selectedNode;
 
-    public BrowseClusterViewController(Preferences preferences, ControllerListener parent, ClusterNode clusterNode) {
+    public BrowseClusterViewController(KafkaReader kafkaReader, Preferences preferences, ControllerListener parent) {
+        this.kafkaReader = kafkaReader;
         this.preferences = preferences;
         this.parent = parent;
-        this.clusterNode = clusterNode;
+        this.clusterNode = new ClusterNode(kafkaReader.getKafkaInstance());
+
+        kafkaReader.getKafkaInstance().addConnectionListener(this);
     }
 
     @Override
@@ -60,6 +66,7 @@ public class BrowseClusterViewController implements Initializable, KafkaTopicsLi
     }
 
     private void setupTopicsTree() {
+        topicsTree.setShowRoot(true);
         var rootItem = new TreeItem<AbstractNode>(clusterNode);
         topicsTree.setRoot(rootItem);
         topicsTree.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<>() {
@@ -94,6 +101,10 @@ public class BrowseClusterViewController implements Initializable, KafkaTopicsLi
                 // any other click cause hiding menu
                 topicContextMenu.hide();
             }
+        });
+
+        Platform.runLater(() -> {
+            topicsTree.getSelectionModel().select(rootItem);
         });
     }
 
@@ -300,5 +311,19 @@ public class BrowseClusterViewController implements Initializable, KafkaTopicsLi
 
     public void removeItemSelectionListener(ClusterItemSelectionListener listener) {
         treeSelectionListeners.remove(listener);
+    }
+
+    @Override
+    public void connected(boolean really) {
+
+    }
+
+    @Override
+    public void notifyUrlChange(String name, String oldUrl, String newUrl) {
+    }
+
+    @Override
+    public void notifyNameChange(String id, String oldName, String newName) {
+        topicsTree.getRoot().setValue(clusterNode);
     }
 }

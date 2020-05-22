@@ -2,6 +2,7 @@ package com.loco.kafkaguru.core;
 
 import com.loco.kafkaguru.core.listeners.KafkaConnectionListener;
 import com.loco.kafkaguru.core.listeners.KafkaTopicsListener;
+import com.loco.kafkaguru.model.KafkaClusterInfo;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
@@ -20,26 +21,26 @@ import java.util.*;
 
 @Log4j2
 public class KafkaInstance {
-    @Getter
-    private String name;
-    @Getter
-    private String url;
+    private final int port;
     private Properties properties;
     private KafkaConsumer<String, byte[]> consumer;
+    private List<KafkaConnectionListener> connectionListeners = new ArrayList<>();
+    @Getter
+    private KafkaClusterInfo clusterInfo;
+
+    public KafkaInstance(KafkaClusterInfo clusterInfo) {
+        this(clusterInfo, new Properties());
+    }
 
     private synchronized void setConsumer(KafkaConsumer<String, byte[]> consumer) {
         this.consumer = consumer;
     }
 
-    public KafkaInstance(String name, String url) {
-        this(name, url, new Properties());
-    }
-
-    public KafkaInstance(String name, String url, @NonNull Properties properties) {
-        this.name = name;
+    public KafkaInstance(KafkaClusterInfo clusterInfo, @NonNull Properties properties) {
+        this.clusterInfo = clusterInfo;
         this.properties = properties;
 
-        String[] parts = url.split(":");
+        String[] parts = clusterInfo.getUrl().split(":");
         if (parts.length < 1) {
             throw new IllegalArgumentException("Url is empty");
         }
@@ -47,8 +48,8 @@ public class KafkaInstance {
             throw new IllegalArgumentException("Url should not have more than one ':' separator");
         }
         String host = parts[0];
-        int port = parts.length > 1 ? Integer.parseInt(parts[1]) : 9092;
-        this.url = createUrl(host, port);
+        port = parts.length > 1 ? Integer.parseInt(parts[1]) : 9092;
+        clusterInfo.setUrl(host);
     }
 
     public static String createUrl(String host, int port) {
@@ -56,7 +57,7 @@ public class KafkaInstance {
     }
 
     private void connect() throws KafkaException, UnknownHostException {
-        setConsumer(createConsumer(url, properties));
+        setConsumer(createConsumer(createUrl(clusterInfo.getUrl(), port), properties));
     }
 
     public Map<String, List<PartitionInfo>> refreshTopics() throws KafkaException {
@@ -91,16 +92,16 @@ public class KafkaInstance {
         return new KafkaConsumer<String, byte[]>(this.properties);
     }
 
-    public void connectAsync(KafkaConnectionListener listener) {
+    public void connectAsync() {
         log.info("Starting connection thread");
         new Thread(() -> {
             log.info("Started connection thread");
             try {
                 connect();
-                listener.connected(true);
+                connectionListeners.forEach(listener -> listener.connected(clusterInfo.getId(), true));
             } catch (KafkaException | UnknownHostException e) {
                 log.error("Failed to connect to kafka ", e);
-                listener.connected(false);
+                connectionListeners.forEach(listener -> listener.connected(clusterInfo.getId(), false));
             }
         }).start();
     }
@@ -114,7 +115,7 @@ public class KafkaInstance {
                 listener.topicsUpdated(topics);
                 log.info("Obtained topics from kafka ");
             } catch (KafkaException e) {
-                log.error("Failed to fetch topics from kafka for {}", url, e);
+                log.error("Failed to fetch topics from kafka for {}", clusterInfo.getUrl(), e);
                 listener.topicsUpdated(null);
             }
         }).start();
@@ -168,5 +169,29 @@ public class KafkaInstance {
             offsets.add(new PartitionOffset(partition, startOffset, endOffset));
         }
         return offsets;
+    }
+
+    public void addConnectionListener(KafkaConnectionListener listener) {
+        connectionListeners.add(listener);
+    }
+
+    public void setUrl(String newUrl) {
+        var oldUrl = clusterInfo.getUrl();
+        clusterInfo.setUrl(newUrl);
+        connectionListeners.forEach(listener -> listener.notifyUrlChange(clusterInfo.getId(), oldUrl, newUrl));
+    }
+
+    public void setName(String newName) {
+        var oldName = clusterInfo.getName();
+        clusterInfo.setName(newName);
+        connectionListeners.forEach(listener -> listener.notifyNameChange(clusterInfo.getId(), oldName, newName));
+    }
+
+    public String getName() {
+        return clusterInfo.getName();
+    }
+
+    public String getUrl() {
+        return clusterInfo.getUrl();
     }
 }

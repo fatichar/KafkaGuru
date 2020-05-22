@@ -56,6 +56,11 @@ public class TopicNode implements AbstractNode {
         // }
     }
 
+    @Override
+    public NodeType getType() {
+        return NodeType.TOPIC;
+    }
+
     public List<TopicPartition> getTopicPartitions() {
         return partitions.stream().map(p -> p.getTopicPartition()).collect(Collectors.toList());
     }
