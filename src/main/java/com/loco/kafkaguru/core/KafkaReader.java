@@ -20,16 +20,16 @@ public class KafkaReader {
     private long maxWait = 10000;
     private long waitPerMessage = 10;
 
-    public KafkaReader(@NonNull String name, @NonNull String url) {
-        kafkaInstance = new KafkaInstance(name, url);
-    }
-
     public KafkaReader(@NonNull KafkaInstance instance) {
         this.kafkaInstance = instance;
     }
 
-    private void fetchMessages(@NonNull List<TopicPartition> topicPartitions, int maxMessageCount, long fetchFrom,
-                               KafkaMessagesListener listener, Object sender) {
+    private void fetchMessages(
+            @NonNull List<TopicPartition> topicPartitions,
+            int maxMessageCount,
+            long fetchFrom,
+            KafkaMessagesListener listener,
+            Object sender) {
         log.info("Getting messages");
 
         if (topicPartitions.isEmpty()) {
@@ -63,7 +63,10 @@ public class KafkaReader {
                 listener.messagesReceived(batch, sender, batchNumber, more);
             }
 
-            log.info("Finished reading {} messages from topic: {} in {} seconds.", totalCount, topic,
+            log.info(
+                    "Finished reading {} messages from topic: {} in {} seconds.",
+                    totalCount,
+                    topic,
                     stopWatch.getTime(TimeUnit.SECONDS));
         }
     }
@@ -92,7 +95,8 @@ public class KafkaReader {
             default:
                 if (partitionOffsets.size() != 1) {
                     throw new IllegalArgumentException(
-                            "loading from specific" + " offset is possible only if single partition is provided");
+                            "loading from specific"
+                                    + " offset is possible only if single partition is provided");
                 }
                 seekTo(partitionOffsets.get(0), fetchFrom);
                 break;
@@ -112,7 +116,8 @@ public class KafkaReader {
         for (PartitionOffset po : partitionOffsets) {
             if (po.getEndOffset() > po.getStartOffset()) {
                 int messagesToFetch = remainingMessages / remainingPartitions;
-                long startOffset = Math.max(po.getEndOffset() - messagesToFetch, po.getStartOffset());
+                long startOffset =
+                        Math.max(po.getEndOffset() - messagesToFetch, po.getStartOffset());
                 seekTo(po, startOffset);
                 int availableMessages = (int) (po.getEndOffset() - startOffset);
                 remainingMessages -= availableMessages;
@@ -125,19 +130,26 @@ public class KafkaReader {
         kafkaInstance.seek(po.getTopicPartition(), offset);
     }
 
-    public void getMessagesAsync(List<TopicPartition> topicPartitions, int limit, long fetchFrom,
-                                 KafkaMessagesListener listener, Object sender) {
+    public void getMessagesAsync(
+            List<TopicPartition> topicPartitions,
+            int limit,
+            long fetchFrom,
+            KafkaMessagesListener listener,
+            Object sender) {
         log.info("In getMessagesAsync()");
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                log.info("calling getMessages()");
-                try {
-                    fetchMessages(topicPartitions, limit, fetchFrom, listener, sender);
-                } catch (Exception e) {
-                    listener.messagesReceived(null, sender, 0, false);
-                }
-            }
-        }).start();
+        new Thread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                log.info("calling getMessages()");
+                                try {
+                                    fetchMessages(
+                                            topicPartitions, limit, fetchFrom, listener, sender);
+                                } catch (Exception e) {
+                                    listener.messagesReceived(null, sender, 0, false);
+                                }
+                            }
+                        })
+                .start();
     }
 }

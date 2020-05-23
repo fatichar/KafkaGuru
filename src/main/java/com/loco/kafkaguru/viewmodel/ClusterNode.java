@@ -23,8 +23,7 @@ public class ClusterNode implements AbstractNode {
     }
 
     @Override
-    public void addMessages(List<MessageModel> messages) {
-    }
+    public void addMessages(List<MessageModel> messages) {}
 
     @Override
     public NodeType getType() {

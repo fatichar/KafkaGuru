@@ -25,22 +25,25 @@ public class TopicNode implements AbstractNode {
     public TopicNode(AbstractNode parent, String topic, List<PartitionInfo> partitions) {
         this.parent = parent;
         this.topic = topic;
-        this.partitions = partitions.stream().map(p -> new PartitionNode(this, p)).collect(Collectors.toList());
+        this.partitions =
+                partitions.stream()
+                        .map(p -> new PartitionNode(this, p))
+                        .collect(Collectors.toList());
     }
 
     public void setMessages(List<MessageModel> messages) {
         this.messages = messages;
-         if (messages != null) {
-             if (partitions.size() == 1){
-                 partitions.get(0).setMessages(messages);
-             }
-        // partitions.forEach(p -> {
-        // var subMessages = messages.stream().filter(m -> m.getPartition() ==
-        // p.getPartition().partition())
-        // .collect(Collectors.toList());
-        // p.setMessages(subMessages);
-        // });
-         }
+        if (messages != null) {
+            if (partitions.size() == 1) {
+                partitions.get(0).setMessages(messages);
+            }
+            // partitions.forEach(p -> {
+            // var subMessages = messages.stream().filter(m -> m.getPartition() ==
+            // p.getPartition().partition())
+            // .collect(Collectors.toList());
+            // p.setMessages(subMessages);
+            // });
+        }
     }
 
     @Override

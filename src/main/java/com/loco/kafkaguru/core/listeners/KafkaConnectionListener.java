@@ -7,4 +7,3 @@ public interface KafkaConnectionListener {
 
     void notifyNameChange(String id, String oldName, String newName);
 }
-

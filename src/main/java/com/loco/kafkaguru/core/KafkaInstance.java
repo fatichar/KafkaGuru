@@ -25,8 +25,7 @@ public class KafkaInstance {
     private Properties properties;
     private KafkaConsumer<String, byte[]> consumer;
     private List<KafkaConnectionListener> connectionListeners = new ArrayList<>();
-    @Getter
-    private KafkaClusterInfo clusterInfo;
+    @Getter private KafkaClusterInfo clusterInfo;
 
     public KafkaInstance(KafkaClusterInfo clusterInfo) {
         this(clusterInfo, new Properties());
@@ -68,8 +67,10 @@ public class KafkaInstance {
                     return consumer.listTopics(Duration.ofSeconds(5));
                 } catch (KafkaException e) {
                     --remainingTries;
-                    log.warn("Failed to obtain topics from Kafka. Remaining tries = " + remainingTries);
-                    if (remainingTries == 0){
+                    log.warn(
+                            "Failed to obtain topics from Kafka. Remaining tries = "
+                                    + remainingTries);
+                    if (remainingTries == 0) {
                         throw e;
                     }
                 }
@@ -94,31 +95,40 @@ public class KafkaInstance {
 
     public void connectAsync() {
         log.info("Starting connection thread");
-        new Thread(() -> {
-            log.info("Started connection thread");
-            try {
-                connect();
-                connectionListeners.forEach(listener -> listener.connected(clusterInfo.getId(), true));
-            } catch (KafkaException | UnknownHostException e) {
-                log.error("Failed to connect to kafka ", e);
-                connectionListeners.forEach(listener -> listener.connected(clusterInfo.getId(), false));
-            }
-        }).start();
+        new Thread(
+                        () -> {
+                            log.info("Started connection thread");
+                            try {
+                                connect();
+                                connectionListeners.forEach(
+                                        listener -> listener.connected(clusterInfo.getId(), true));
+                            } catch (KafkaException | UnknownHostException e) {
+                                log.error("Failed to connect to kafka ", e);
+                                connectionListeners.forEach(
+                                        listener -> listener.connected(clusterInfo.getId(), false));
+                            }
+                        })
+                .start();
     }
 
     public void refreshTopicsAsync(KafkaTopicsListener listener) {
         log.info("Starting connection thread");
-        new Thread(() -> {
-            try {
-                log.info("Obtaining topics from kafka ");
-                var topics = refreshTopics();
-                listener.topicsUpdated(topics);
-                log.info("Obtained topics from kafka ");
-            } catch (KafkaException e) {
-                log.error("Failed to fetch topics from kafka for {}", clusterInfo.getUrl(), e);
-                listener.topicsUpdated(null);
-            }
-        }).start();
+        new Thread(
+                        () -> {
+                            try {
+                                log.info("Obtaining topics from kafka ");
+                                var topics = refreshTopics();
+                                listener.topicsUpdated(topics);
+                                log.info("Obtained topics from kafka ");
+                            } catch (KafkaException e) {
+                                log.error(
+                                        "Failed to fetch topics from kafka for {}",
+                                        clusterInfo.getUrl(),
+                                        e);
+                                listener.topicsUpdated(null);
+                            }
+                        })
+                .start();
     }
 
     public void assign(List<TopicPartition> topicPartitions) {
@@ -178,13 +188,15 @@ public class KafkaInstance {
     public void setUrl(String newUrl) {
         var oldUrl = clusterInfo.getUrl();
         clusterInfo.setUrl(newUrl);
-        connectionListeners.forEach(listener -> listener.notifyUrlChange(clusterInfo.getId(), oldUrl, newUrl));
+        connectionListeners.forEach(
+                listener -> listener.notifyUrlChange(clusterInfo.getId(), oldUrl, newUrl));
     }
 
     public void setName(String newName) {
         var oldName = clusterInfo.getName();
         clusterInfo.setName(newName);
-        connectionListeners.forEach(listener -> listener.notifyNameChange(clusterInfo.getId(), oldName, newName));
+        connectionListeners.forEach(
+                listener -> listener.notifyNameChange(clusterInfo.getId(), oldName, newName));
     }
 
     public String getName() {

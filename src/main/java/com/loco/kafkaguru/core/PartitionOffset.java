@@ -11,7 +11,7 @@ public class PartitionOffset {
     private long startOffset;
     private long endOffset;
 
-    public String toString(){
+    public String toString() {
         return topicPartition.toString() + ", [" + startOffset + " to " + endOffset + "]";
     }
 }

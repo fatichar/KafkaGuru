@@ -1,10 +1,12 @@
 package com.loco.kafkaguru.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loco.kafkaguru.core.KafkaInstance;
 import com.loco.kafkaguru.core.PluginLoader;
 import com.loco.kafkaguru.core.listeners.KafkaConnectionListener;
 import com.loco.kafkaguru.model.KafkaClusterInfo;
 import com.loco.kafkaguru.view.KafkaView;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -13,29 +15,26 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-import java.util.prefs.BackingStoreException;
-import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
 @Getter
 @Setter
 @Log4j2
-public class MainWindowController implements Initializable, ControllerListener, KafkaConnectionListener {
-    @FXML
-    private MenuItem newClusterMenuItem;
-    @FXML
-    private Menu openClusterMenu;
-    @FXML
-    private MenuItem closeClusterMenuItem;
-    @FXML
-    private Menu removeClusterMenu;
+public class MainWindowController
+        implements Initializable, ControllerListener, KafkaConnectionListener {
+    @FXML private MenuItem newClusterMenuItem;
+    @FXML private Menu openClusterMenu;
+    @FXML private MenuItem closeClusterMenuItem;
+    @FXML private Menu removeClusterMenu;
 
-    @FXML
-    private TabPane tabPane;
+    @FXML private TabPane tabPane;
 
-    private Preferences preferences;
+    //    private Preferences preferences;
+    private MainWindowSettings settings;
     // key = cluster id
     private Map<String, KafkaClusterInfo> clusters = new HashMap<>();
     // key = controller id
@@ -44,109 +43,99 @@ public class MainWindowController implements Initializable, ControllerListener, 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         PluginLoader.loadPlugins();
-        preferences = readPreferences();
-        clusters = createClusters(preferences);
+        settings = readSettings();
+        clusters = settings.getClusters();
         createMenuItems(clusters);
-        controllers = createControllers(preferences, clusters);
-        var tabs = controllers.values().stream().map(this::createTab).collect(Collectors.toList());
-        tabPane.getTabs().addAll(tabs);
+        controllers = new TreeMap<>();
+        createControllersAndTabs(settings, controllers, tabPane.getTabs());
     }
 
-    /**
-     * Read preferences from file.
-     *
-     * @return Preferences object for locally saved preferences
-     */
-    private Preferences readPreferences() {
-        return Preferences.userRoot().node(this.getClass().getName());
-    }
-
-    private Map<String, KafkaClusterInfo> createClusters(Preferences appPreferences) {
+    private MainWindowSettings readSettings() {
+        var fileName = "settings.json";
+        var mapper = new ObjectMapper();
+        MainWindowSettings settings = null;
         try {
-            var clustersNode = appPreferences.node("clusters");
-            var clusterIds = clustersNode.childrenNames();
-            var clusters = Arrays.stream(clusterIds) //
-                    .map(clusterId -> clustersNode.node(clusterId)) //
-                    .map(this::createCluster)
-                    .collect(Collectors.toMap((cluster -> cluster.getId()), (cluster -> cluster)));
-
-            return clusters;
-        } catch (BackingStoreException e) {
-            e.printStackTrace();
+            settings = mapper.readValue(new File(fileName), MainWindowSettings.class);
+        } catch (IOException e) {
         }
+        if (settings == null){
+            settings = importSettingsFromPreferences();
+        }
+        if (settings == null) {
+            settings = MainWindowSettings.createNew();
+        }
+        return settings;
+    }
+
+    private MainWindowSettings importSettingsFromPreferences() {
         return null;
     }
 
-    private KafkaClusterInfo createCluster(Preferences preferences) {
-        var clusterId = preferences.name();
-        var name = preferences.get("name", null);
-        var url = preferences.get("url", null);
-
-        return new KafkaClusterInfo(clusterId, name, url);
-    }
-
-    private Map<String, KafkaViewController> createControllers(Preferences preferences,
-            Map<String, KafkaClusterInfo> clusters) {
-        var controllers = new TreeMap<String, KafkaViewController>();
-        List<Preferences> tabNodes = null;
+    private void saveSettings() {
+        var fileName = "settings.json";
+        var mapper = new ObjectMapper();
         try {
-            var tabsNode = preferences.node("tabs");
-            var tabIds = tabsNode.childrenNames();
-            tabNodes = Arrays.stream(tabIds) //
-                    .map(tabId -> tabsNode.node(tabId)) //
-                    .collect(Collectors.toList());
-        } catch (BackingStoreException e) {
+            mapper.writeValue(new File(fileName), settings);
+        } catch (IOException e) {
             e.printStackTrace();
-            return controllers;
         }
-
-        for (var tabNode : tabNodes) {
-            var clusterId = getClusterId(tabNode);
-            var cluster = clusters.get(clusterId);
-            if (cluster == null) {
-                log.error(
-                        "Tab with name {} could not be loaded, because "
-                                + "the associated cluster could not be found in saved preferences",
-                        tabNode.name(), clusterId);
-                continue;
-            }
-            var controllerId = tabNode.name();
-            if (controllerId == null) {
-                log.error("Too many tabs for cluster {}", clusterId);
-                continue;
-            }
-            var kafkaInstance = createKafkaInstance(cluster);
-            var controller = new KafkaViewController(kafkaInstance, this, tabNode);
-            controllers.put(controllerId, controller);
-        }
-
-        return controllers;
     }
 
-    private String createControllerName(KafkaClusterInfo cluster) {
+    private void createControllersAndTabs(
+            MainWindowSettings settings,
+            Map<String, KafkaViewController> controllers,
+            ObservableList<Tab> tabs) {
+        clusters.values()
+                .forEach(
+                        cluster -> {
+                            var clusterTabSettings = settings.getClusterTabs().get(cluster.getId());
+                            clusterTabSettings.stream()
+                                    .forEach(
+                                            tabSettings -> {
+                                                var kafkaInstance = createKafkaInstance(cluster);
+                                                var controller =
+                                                        new KafkaViewController(
+                                                                kafkaInstance,
+                                                                tabSettings,
+                                                                settings.getTopicFormats());
+                                                String tabId = UUID.randomUUID().toString();
+                                                controllers.put(tabId, controller);
+                                                var tabName = createTabName(cluster);
+                                                var tab = createTab(tabId, tabName, controller);
+                                                tabs.add(tab);
+                                            });
+                        });
+    }
+
+    private String createTabName(KafkaClusterInfo cluster) {
         var clusterName = cluster.getName();
-        var controllerId = clusterName;
+        var controllerName = clusterName;
         byte i = 2;
+        var tabNames =
+                tabPane.getTabs().stream()
+                        .filter(
+                                tab ->
+                                        ((KafkaViewController) tab.getUserData())
+                                                .getClusterId()
+                                                .equals(cluster.getId()))
+                        .map(tab -> tab.getText())
+                        .collect(Collectors.toSet());
 
         do {
-            if (!controllers.containsKey(controllerId)) {
-                return controllerId;
+            if (!tabNames.contains(controllerName)) {
+                return controllerName;
             }
-            controllerId = clusterName + "(" + i + ")";
+            controllerName = clusterName + "(" + i + ")";
         } while (++i > 0);
 
         return null;
     }
 
-    private String getClusterId(Preferences preferences) {
-        return preferences.get("cluster_id", null);
-    }
-
-    private Tab createTab(KafkaViewController controller) {
+    private Tab createTab(String tabId, String tabName, KafkaViewController controller) {
         KafkaView kafkaView = new KafkaView(controller);
 
-        Tab tab = new Tab(controller.getName());
-        tab.setId(controller.getName());
+        Tab tab = new Tab(tabName);
+        tab.setId(tabId);
         tab.setUserData(controller);
         tab.setContent(kafkaView);
 
@@ -154,10 +143,12 @@ public class MainWindowController implements Initializable, ControllerListener, 
     }
 
     private void createMenuItems(Map<String, KafkaClusterInfo> clusters) {
-        clusters.values().forEach(cluster -> {
-            createOpenClusterMenuItem(cluster);
-            createRemoveClusterMenuItem(cluster);
-        });
+        clusters.values()
+                .forEach(
+                        cluster -> {
+                            createOpenClusterMenuItem(cluster);
+                            createRemoveClusterMenuItem(cluster);
+                        });
     }
 
     private void createOpenClusterMenuItem(KafkaClusterInfo cluster) {
@@ -177,73 +168,60 @@ public class MainWindowController implements Initializable, ControllerListener, 
     public void onNewCluster(ActionEvent actionEvent) {
         KafkaClusterInfo cluster = new KafkaClusterInfo(suggestClusterName(), "");
 
-        clusters.put(cluster.getName(), cluster);
-
-        var controller = createController(cluster);
-        controllers.put(controller.getName(), controller);
-
-        Tab newTab = createTab(controller);
-        tabPane.getTabs().add(newTab);
-        tabPane.getSelectionModel().select(newTab);
-    }
-
-    private String suggestClusterName() {
-        var name = "new cluster";
-        for (int i = 1; true; ++i){
-            if (!clusters.containsKey(name)){
-                return name;
-            }
-            name = "new cluster " + i;
-        }
-    }
-
-    public void onNewCluster_(ActionEvent actionEvent) {
-        KafkaClusterInfo cluster = getNewClusterInfo();
-        if (cluster == null) {
-            return;
-        }
-        clusters.put(cluster.getName(), cluster);
-        save(cluster);
-
+        clusters.put(cluster.getId(), cluster);
+        settings.getClusterTabs().put(cluster.getId(), new ArrayList<>());
         createOpenClusterMenuItem(cluster);
         createRemoveClusterMenuItem(cluster);
 
-        var controller = createController(cluster);
-        controllers.put(controller.getName(), controller);
+        var tabSettings = TabSettings.createNew();
+        var controller = createController(cluster, tabSettings);
+        var controllerId = UUID.randomUUID().toString();
+        settings.getClusterTabs().get(cluster.getId()).add(tabSettings);
+        controllers.put(controllerId, controller);
 
-        Tab newTab = createTab(controller);
+        var tabName = createTabName(cluster);
+        Tab newTab = createTab(controllerId, tabName, controller);
         tabPane.getTabs().add(newTab);
         tabPane.getSelectionModel().select(newTab);
+
+        saveSettings();
     }
 
-    private Preferences save(KafkaClusterInfo cluster) {
-        var childPreferences = preferences.node("clusters").node(cluster.getId());
-        childPreferences.put("name", cluster.getName());
-        childPreferences.put("url", cluster.getUrl());
-        savePreferences(childPreferences);
-        return childPreferences;
+    private KafkaViewController createController(
+            KafkaClusterInfo cluster, TabSettings tabSettings) {
+        var kafkaInstance = createKafkaInstance(cluster);
+        var controller =
+                new KafkaViewController(kafkaInstance, tabSettings, settings.getTopicFormats());
+        return controller;
     }
 
     public void onOpenCluster(ActionEvent event) {
         var menuItem = (MenuItem) event.getSource();
-
         var clusterId = menuItem.getId();
         var cluster = clusters.get(clusterId);
 
-        var controller = createController(cluster);
-        controllers.put(controller.getName(), controller);
+        var tabSettings = TabSettings.createNew();
+        var controller = createController(cluster, tabSettings);
+        var controllerId = UUID.randomUUID().toString();
+        settings.getClusterTabs().get(cluster.getId()).add(tabSettings);
+        controllers.put(controllerId, controller);
 
-        var tab = createTab(controller);
-        tabPane.getTabs().add(tab);
+        var tabName = createTabName(cluster);
+        Tab newTab = createTab(controllerId, tabName, controller);
+        tabPane.getTabs().add(newTab);
+        tabPane.getSelectionModel().select(newTab);
+
+        saveSettings();
     }
 
-    private KafkaViewController createController(KafkaClusterInfo cluster) {
-        var controllerName = createControllerName(cluster);
-        var tabPreferences = preferences.node("tabs").node(controllerName);
-        tabPreferences.put("cluster_id", cluster.getId());
-        var kafkaInstance = createKafkaInstance(cluster);
-        var controller = new KafkaViewController(kafkaInstance, this, tabPreferences);
-        return controller;
+    private String suggestClusterName() {
+        var name = "Cluster";
+        for (int i = 1; true; ++i) {
+            if (!clusters.containsKey(name)) {
+                return name;
+            }
+            name = "Cluster " + i;
+        }
     }
 
     private KafkaInstance createKafkaInstance(KafkaClusterInfo cluster) {
@@ -253,200 +231,138 @@ public class MainWindowController implements Initializable, ControllerListener, 
     }
 
     public void onRemoveCluster(ActionEvent event) {
-        boolean removeTabs = getConfirmation("Removing the cluster will close associated tabs. Proceed?");
+        boolean removeTabs =
+                getConfirmation("Removing the cluster will close associated tabs. Proceed?");
         if (!removeTabs) {
             return;
         }
         var menuItem = (MenuItem) event.getSource();
-        var clusterName = (String) menuItem.getId();
-        clusters.remove(clusterName);
+        var clusterId = (String) menuItem.getId();
+        clusters.remove(clusterId);
         removeClusterMenu.getItems().remove(menuItem);
-        openClusterMenu.getItems().removeIf(item -> item.getId().equals(clusterName));
+        openClusterMenu.getItems().removeIf(item -> item.getId().equals(clusterId));
 
-        removeTabs(clusterName);
-        try {
-            var node = preferences.node("clusters").node(clusterName);
-            node.removeNode();
-            node.flush();
-        } catch (BackingStoreException e) {
-            e.printStackTrace();
-        }
+        removeTabs(clusterId);
+
+        saveSettings();
     }
 
-    private void removeTabs(String removedClusterId) {
-        try {
-            var tabsNode = preferences.node("tabs");
-            var tabNames = tabsNode.childrenNames();
-            for (String tabName : tabNames) {
-                var node = tabsNode.node(tabName);
-                var clusterId = node.get("cluster_id", "");
-                if (removedClusterId.equals(clusterId)) {
-                    node.removeNode();
-                    controllers.remove(tabName);
-                    tabPane.getTabs().removeIf(tab -> tab.getId().equals(tabName));
-                }
-            }
-            preferences.flush();
-        } catch (BackingStoreException e) {
-            e.printStackTrace();
-        }
+    private void removeTabs(String clusterId) {
+        var tabIds = settings.getClusterTabs().remove(clusterId);
+
+        var clusterControllerIds =
+                controllers.entrySet().stream()
+                        .filter(entry -> entry.getValue().getClusterId().equals(clusterId))
+                        .map(entry -> entry.getKey())
+                        .collect(Collectors.toList());
+
+        clusterControllerIds.forEach(id -> controllers.remove(id));
+
+        tabPane.getTabs().removeIf(tab -> clusterControllerIds.contains(tab.getId()));
+        settings.getClusterTabs().remove(clusterId);
     }
 
     public void onCloseTab(ActionEvent actionEvent) {
+        log.info("Closing active tab");
         var activeTab = tabPane.getSelectionModel().getSelectedItem();
         if (activeTab == null) {
+            log.info("There is no active tab");
             return;
         }
 
+        var tabId = activeTab.getId();
+        log.info("active tab title = " + activeTab.getText());
+        var controller = controllers.remove(tabId);
+        log.info("removed controller with id = " + tabId);
+        var tabSettings = controller.getSettings();
+        log.info("tabSettings = " + tabSettings);
+        var clusterTabs = settings.getClusterTabs().get(controller.getClusterId());
+        log.info("cluster tab count before removing = " + clusterTabs.size());
+        clusterTabs.remove(tabSettings);
+        var present = clusterTabs.contains(tabSettings);
+        log.info("cluster tab count after removing = " + clusterTabs.size());
         tabPane.getTabs().remove(activeTab);
 
-        boolean keepSaved = getConfirmation("Do you want to see this tab on next launch?");
-
-        if (keepSaved) {
-            return;
-        }
-
-        try {
-            var node = preferences.node("tabs").node(activeTab.getId());
-            node.removeNode();
-            node.flush();
-        } catch (BackingStoreException e) {
-            e.printStackTrace();
-        }
+        saveSettings();
     }
 
     private boolean getConfirmation(String msg) {
-        return new Alert(Alert.AlertType.CONFIRMATION, msg, ButtonType.YES, ButtonType.NO).showAndWait()
-                .orElse(ButtonType.NO).equals(ButtonType.YES);
+        return new Alert(Alert.AlertType.CONFIRMATION, msg, ButtonType.YES, ButtonType.NO)
+                .showAndWait()
+                .orElse(ButtonType.NO)
+                .equals(ButtonType.YES);
     }
 
-    private KafkaClusterInfo getNewClusterInfo() {
-        String kafkaUrl = getUserInput("Enter kafka URL");
-        if (kafkaUrl == null)
-            return null;
-        if (kafkaUrl.isEmpty()) {
-            return null; // TODO show alert
-        }
-
-        var clusterName = getUserInput("Give a friendly name to this kafka instance");
-        if (clusterName == null)
-            return null;
-        if (clusterName.isEmpty()) {
-            return null; // TODO show alert
-        }
-
-        return new KafkaClusterInfo(clusterName, kafkaUrl);
-    }
-
-    private String getUserInput(String message) {
-        var inputDialog = new TextInputDialog();
-        inputDialog.setHeaderText(message);
-        var result = inputDialog.showAndWait();
-        if (result.isEmpty()) {
-            return null;
-        }
-
-        var kafkaUrl = result.get();
-        return kafkaUrl;
-    }
-
-    @Override
+    //    @Override
     public void destroy(KafkaViewController controller) {
-        tabPane.getTabs().remove(controller.getName());
-        controllers.remove(controller);
-    }
-
-    @Override
-    public void savePreference(ArrayList<String> nodeNames, String key, String value) {
-        Preferences leafNode = preferences;
-
-        for (var nodeName : nodeNames) {
-            leafNode = leafNode.node(nodeName);
-        }
-
-        leafNode.put(key, value);
-
-        controllers.values().forEach(c -> c.preferenceUpdated(nodeNames, key, value));
-    }
-
-    @Override
-    public String getPreference(ArrayList<String> nodeNames, String key) {
-        Preferences leafNode = preferences;
-
-        for (var nodeName : nodeNames) {
-            leafNode = leafNode.node(nodeName);
-        }
-
-        return leafNode.get(key, "");
-    }
-
-    /**
-     * Saves given preferences to file.
-     *
-     * @param preferences
-     */
-    private void savePreferences(Preferences preferences) {
-        try {
-            preferences.flush();
-        } catch (BackingStoreException e) {
-            e.printStackTrace();
-            new Alert(Alert.AlertType.ERROR, "Failed to save preferences").showAndWait();
-        }
+        //        tabPane.getTabs().removeIf(tab -> tab.getId().equals(controller.getId()));
+        //        controllers.remove(controller);
     }
 
     @Override
     public void connected(String name, boolean really) {
         var cluster = clusters.get(name);
-        if (cluster == null){
+        if (cluster == null) {
             return;
         }
-        save(cluster);
     }
 
     @Override
-    public void notifyUrlChange(String name, String oldUrl, String newUrl) {
-        var cluster = clusters.get(name);
-        if (cluster == null){
-            cluster = new KafkaClusterInfo(name, newUrl);
-            clusters.put(name, cluster);
+    public void notifyUrlChange(String clusterId, String oldUrl, String newUrl) {
+        var cluster = clusters.get(clusterId);
+        if (cluster == null) {
         } else {
             cluster.setUrl(newUrl);
+            saveSettings();
         }
     }
 
     @Override
-    public void notifyNameChange(String id, String oldName, String newName) {
-        var cluster = clusters.get(oldName);
-        if (cluster == null){
-            cluster = new KafkaClusterInfo(oldName, "");
+    public void notifyNameChange(String clusterId, String oldName, String newName) {
+        var cluster = clusters.get(clusterId);
+        if (cluster == null) {
+            return;
         } else {
             cluster.setName(newName);
-            clusters.remove(oldName);
         }
-        clusters.put(newName, cluster);
 
-        this.controllers.keySet().stream()
-                .forEach(controllerName -> {
-                    var clusterName = getClusterName(controllerName);
-                    if (controllerName.equals(clusterName)){
-                        var controller = this.controllers.remove(controllerName);
-                        var newControllerName = newName;
-                        this.controllers.put(newControllerName, controller);
-                        var controllerTab = tabPane.getTabs().stream().filter(tab -> tab.getUserData().equals(controller))
-                        .findFirst().orElse(null);
-                        if (controllerTab != null){
-                            controllerTab.setText(newControllerName);
-                        }
-                    }
+        var clusterControllers = getControllers(clusterId);
+
+        var tabs =
+                tabPane.getTabs().stream()
+                        .filter(tab -> clusterControllers.contains(tab.getUserData()))
+                        .collect(Collectors.toList());
+        tabs.forEach(
+                tab -> {
+                    var oldText = tab.getText();
+                    var newText = rename(oldText, oldName, newName);
+                    tab.setText(newText);
                 });
+
+        renameMenuItems(openClusterMenu, clusterId, newName);
+        renameMenuItems(removeClusterMenu, clusterId, newName);
+
+        saveSettings();
     }
 
-    private String getClusterName(String controllerName) {
-        var separatorIndex = controllerName.indexOf('(');
-        if (separatorIndex < 0){
-            return controllerName;
-        }
+    private List<KafkaViewController> getControllers(String clusterId) {
+        return controllers.values().stream()
+                .filter(c -> c.getClusterId().equals(clusterId))
+                .collect(Collectors.toList());
+    }
 
-        return controllerName.substring(0, separatorIndex);
+    private void renameMenuItems(Menu menu, String clusterId, String newName) {
+        var menuItem =
+                menu.getItems().stream()
+                        .filter(item -> clusterId.equals(item.getId()))
+                        .findFirst()
+                        .orElse(null);
+        if (menuItem != null) {
+            menuItem.setText(newName);
+        }
+    }
+
+    private String rename(String oldControllerName, String oldClusterName, String newClusterName) {
+        return oldControllerName.replace(oldClusterName, newClusterName);
     }
 }

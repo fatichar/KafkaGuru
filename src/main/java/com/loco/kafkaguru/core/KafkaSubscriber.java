@@ -15,12 +15,8 @@ public class KafkaSubscriber {
         this.reader = reader;
     }
 
-    public KafkaSubscriber(@NonNull String name, @NonNull String url) {
-        this(new KafkaReader(name, url));
-    }
-
-    public boolean subscribe(String topic){
-//        getConsumer().subscribe(Arrays.asList(topic));
+    public boolean subscribe(String topic) {
+        //        getConsumer().subscribe(Arrays.asList(topic));
 
         return true;
     }

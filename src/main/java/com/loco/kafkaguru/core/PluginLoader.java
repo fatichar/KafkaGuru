@@ -32,7 +32,7 @@ public class PluginLoader extends ClassLoader {
 
         var pluginInfoFilePath = Paths.get(PLUGIN_DIR, PLUGIN_INFO_FILE).toString();
         var file = new File(pluginInfoFilePath);
-        if (!file.exists()){
+        if (!file.exists()) {
             log.info("No plugins found");
             return;
         }
@@ -85,7 +85,7 @@ public class PluginLoader extends ClassLoader {
         }
         URL[] urls = new URL[0];
         try {
-            urls = new URL[] { new URL("jar:file:" + jarFile.getName() + "!/") };
+            urls = new URL[] {new URL("jar:file:" + jarFile.getName() + "!/")};
         } catch (MalformedURLException ex) {
             ex.printStackTrace();
         }

@@ -17,37 +17,34 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.net.URL;
 import java.util.*;
-import java.util.prefs.BackingStoreException;
-import java.util.prefs.Preferences;
 
 @Log4j2
-public class KafkaViewController implements Initializable, KafkaConnectionListener, ClusterItemSelectionListener {
+public class KafkaViewController
+        implements Initializable, KafkaConnectionListener, ClusterItemSelectionListener {
+    @Getter private final String clusterId;
 
+    @Getter
+    //    private final String id = "";
     private BrowseClusterViewController browseClusterController;
+
     private BrowseClusterItemViewController browseClusterItemController;
 
     // UI controls
-    @FXML
-    private SplitPane topicsMessagesPane;
+    @FXML private SplitPane topicsMessagesPane;
 
     // data fields
     private KafkaInstance kafkaInstance;
 
-    private ControllerListener parent;
-    private Preferences preferences;
+    @Getter private TabSettings settings;
 
-    // This is the node which is currently associated with the messages table.
-    private boolean connected;
     private DoubleProperty topicMessageDividerPos;
 
-    @Getter
-    private String name;
     private ChangeListener<Number> dividerListener;
 
-    public KafkaViewController(KafkaInstance kafkaInstance, ControllerListener parent, Preferences preferences) {
-        name = preferences.name();
-        this.parent = parent;
-        this.preferences = preferences;
+    public KafkaViewController(
+            KafkaInstance kafkaInstance, TabSettings settings, Map<String, String> topicFormats) {
+        clusterId = kafkaInstance.getClusterInfo().getId();
+        this.settings = settings;
         if (kafkaInstance == null) {
             throw new IllegalArgumentException("cluster is null");
         }
@@ -56,8 +53,12 @@ public class KafkaViewController implements Initializable, KafkaConnectionListen
         kafkaInstance.addConnectionListener(this);
         var kafkaReader = new KafkaReader(kafkaInstance);
 
-        browseClusterController = new BrowseClusterViewController(kafkaReader, preferences, parent);
-        browseClusterItemController = new BrowseClusterItemViewController(kafkaReader, preferences);
+        browseClusterController =
+                new BrowseClusterViewController(
+                        kafkaReader, settings.getClusterViewSettings(), topicFormats);
+        browseClusterItemController =
+                new BrowseClusterItemViewController(
+                        kafkaReader, settings.getCusterItemViewSettings());
 
         browseClusterController.addItemSelectionListener(browseClusterItemController);
         browseClusterController.addItemSelectionListener(this);
@@ -72,57 +73,56 @@ public class KafkaViewController implements Initializable, KafkaConnectionListen
         topicsMessagesPane.getItems().add(browseClusterItemView);
 
         topicMessageDividerPos = topicsMessagesPane.getDividers().get(0).positionProperty();
-        dividerListener = (observable, oldValue, newValue) -> preferences.putDouble("topic_message_divider_pos",
-                newValue.doubleValue());
-        var lastDividerPos = preferences.getDouble("topic_message_divider_pos", 0.1);
+        dividerListener =
+                (observable, oldValue, newValue) ->
+                        settings.setDividerPosition(newValue.doubleValue());
+        var lastDividerPos = settings.getDividerPosition();
         topicMessageDividerPos.set(lastDividerPos);
 
         // TODO report connection error
-        if (!StringUtils.isEmpty(kafkaInstance.getUrl())){
+        if (!StringUtils.isEmpty(kafkaInstance.getUrl())) {
             kafkaInstance.connectAsync();
         }
     }
 
     private void removeClusterNode() {
-        parent.destroy(this);
-        var removeCluster = new Alert(Alert.AlertType.ERROR,
-                "Failed to fetch topics." + "\\nWould you like to remove the following cluster from your saved list?"
-                        + "\n\n Cluster Name: " + kafkaInstance.getName(),
-                ButtonType.YES, ButtonType.NO).showAndWait();
+        //        parent.destroy(this);
+        var removeCluster =
+                new Alert(
+                                Alert.AlertType.ERROR,
+                                "Failed to fetch topics."
+                                        + "\\nWould you like to remove the following cluster from your saved list?"
+                                        + "\n\n Cluster Name: "
+                                        + kafkaInstance.getName(),
+                                ButtonType.YES,
+                                ButtonType.NO)
+                        .showAndWait();
         if (removeCluster.orElse(ButtonType.NO).equals(ButtonType.YES)) {
-            try {
-                preferences.removeNode();
-
-            } catch (BackingStoreException ex) {
-                ex.printStackTrace();
-            }
+            // TODO
         }
     }
 
     @Override
     public void connected(String clusterId, boolean really) {
         if (really) {
-            this.connected = true;
-            kafkaInstance.refreshTopicsAsync(topics -> {
-                topicMessageDividerPos.removeListener(dividerListener);
-                var lastDividerPos = preferences.getDouble("topic_message_divider_pos", 0.1);
-                browseClusterController.topicsUpdated(topics);
-                topicMessageDividerPos.set(lastDividerPos);
-                topicMessageDividerPos.addListener(dividerListener);
-            });
+            kafkaInstance.refreshTopicsAsync(
+                    topics -> {
+                        topicMessageDividerPos.removeListener(dividerListener);
+                        var lastDividerPos = settings.getDividerPosition();
+                        browseClusterController.topicsUpdated(topics);
+                        topicMessageDividerPos.set(lastDividerPos);
+                        topicMessageDividerPos.addListener(dividerListener);
+                    });
         } else {
-//            Platform.runLater(() -> removeClusterNode());
+            //            Platform.runLater(() -> removeClusterNode());
         }
     }
 
     @Override
-    public void notifyUrlChange(String name, String oldUrl, String newUrl) {
-
-    }
+    public void notifyUrlChange(String name, String oldUrl, String newUrl) {}
 
     @Override
-    public void notifyNameChange(String id, String oldName, String newName) {
-    }
+    public void notifyNameChange(String id, String oldName, String newName) {}
 
     public void preferenceUpdated(ArrayList<String> nodeNames, String key, String value) {
         if (nodeNames.isEmpty()) {
@@ -142,26 +142,8 @@ public class KafkaViewController implements Initializable, KafkaConnectionListen
     }
 
     @Override
-    public void currentNodeChanged(AbstractNode selectedNode) {
-        saveSelectionPreference(selectedNode);
-    }
+    public void currentNodeChanged(AbstractNode selectedNode) {}
 
-    private void saveSelectionPreference(AbstractNode selectedNode) {
-        var selectedTopic = "";
-        var selectedPartition = -1;
-        switch (selectedNode.getType()){
-            case CLUSTER:
-                return;
-            case TOPIC:
-                selectedTopic = ((TopicNode) selectedNode).getTopic();
-                break;
-            case PARTITION:
-                var partitionNode = (PartitionNode) selectedNode;
-                selectedPartition = partitionNode.getPartition().partition();
-                selectedTopic = partitionNode.getPartition().topic();
-                break;
-        }
-        preferences.put("selected_topic", selectedTopic);
-        preferences.putInt("selected_partition", selectedPartition);
-    }
+    @Override
+    public void messageFormatChanged(String topic) {}
 }

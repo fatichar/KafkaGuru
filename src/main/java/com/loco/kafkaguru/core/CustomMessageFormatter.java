@@ -10,7 +10,8 @@ public class CustomMessageFormatter implements MessageFormatter {
     private Method nameMethod;
     private Method formatMethod;
 
-    public CustomMessageFormatter(Object foreignFormatter) throws NoSuchMethodException, SecurityException {
+    public CustomMessageFormatter(Object foreignFormatter)
+            throws NoSuchMethodException, SecurityException {
         this.foreignFormatter = foreignFormatter;
 
         nameMethod = foreignFormatter.getClass().getMethod("name");
