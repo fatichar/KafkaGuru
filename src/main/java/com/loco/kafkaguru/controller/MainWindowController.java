@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
 @Getter
@@ -59,7 +61,8 @@ public class MainWindowController
         } catch (IOException e) {
         }
         if (settings == null){
-            settings = importSettingsFromPreferences();
+            settings = MigrationHelper.importSettingsFromPreferences(this.getClass().getName());
+            saveSettings(settings);
         }
         if (settings == null) {
             settings = MainWindowSettings.createNew();
@@ -67,11 +70,11 @@ public class MainWindowController
         return settings;
     }
 
-    private MainWindowSettings importSettingsFromPreferences() {
-        return null;
+    private void saveSettings() {
+        saveSettings(settings);
     }
 
-    private void saveSettings() {
+    private void saveSettings(MainWindowSettings settings) {
         var fileName = "settings.json";
         var mapper = new ObjectMapper();
         try {
