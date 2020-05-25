@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CusterItemViewSettings {
-    @Builder.Default private int batchSize = 50;
+    @Builder.Default private int batchSize = 10;
     @Builder.Default private int fetchFrom = -1;
 
     public static CusterItemViewSettings createNew() {

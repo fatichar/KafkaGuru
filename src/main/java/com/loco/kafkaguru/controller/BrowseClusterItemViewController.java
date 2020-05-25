@@ -23,17 +23,21 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
+import tornadofx.control.DateTimePicker;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -51,7 +55,9 @@ public class BrowseClusterItemViewController
 
     @FXML private VBox mainLayout;
     @FXML private AnchorPane clusterDetailsPane;
-    @FXML private SplitPane messagesSplitPane;
+    @FXML private HBox messagesBox;
+    @FXML private TitledPane settingsPane;
+    @FXML private GridPane settingsGrid;
 
     @FXML private TextField clusterNameField;
     @FXML private TextField kafkaUrlField;
@@ -63,6 +69,7 @@ public class BrowseClusterItemViewController
     @FXML private TextField excludeField;
     @FXML private ComboBox<String> messageCountBox;
     @FXML private ComboBox<String> cursorBox;
+    @FXML Button collapseSettingsButton;
 
     // messages table
     @FXML private TableView<MessageModel> messagesTable;
@@ -78,7 +85,6 @@ public class BrowseClusterItemViewController
 
     private MessagesModel messagesModel;
     private boolean loading = false;
-    private int maxMessagesToFetch = 50;
     private long fetchFrom = -1;
     boolean currentNodeStale = false;
     private KafkaReader kafkaReader;
@@ -97,9 +103,6 @@ public class BrowseClusterItemViewController
     public void initialize(URL location, ResourceBundle resources) {
         setupClusterView();
         setupMessagesView();
-
-        clusterDetailsPane.setVisible(false);
-        messagesSplitPane.setVisible(false);
     }
 
     private void setupClusterView() {
@@ -110,6 +113,7 @@ public class BrowseClusterItemViewController
 
     private void setupMessagesView() {
         setupMessagesToolbar();
+        setupSettingsPane();
 
         rowNumberColumn.setCellValueFactory(new PropertyValueFactory<>("index"));
         partitionColumn.setCellValueFactory(new PropertyValueFactory<>("partition"));
@@ -140,6 +144,12 @@ public class BrowseClusterItemViewController
                 });
         messagesContextMenu.getItems().add(saveItem);
         messagesTable.setContextMenu(messagesContextMenu);
+    }
+
+    private void setupSettingsPane() {
+        var dateTimePicker = new DateTimePicker();
+        dateTimePicker.dateTimeValueProperty().setValue(LocalDateTime.now());
+        settingsGrid.add(dateTimePicker, 1, 4, 2, 1);
     }
 
     private void setupCursorBox() {
@@ -173,7 +183,7 @@ public class BrowseClusterItemViewController
     }
 
     private void setupMessageCountBox() {
-        messageCountBox.setValue("" + maxMessagesToFetch);
+        messageCountBox.setValue("" + settings.getBatchSize());
         messageCountBox
                 .valueProperty()
                 .addListener(
@@ -184,9 +194,9 @@ public class BrowseClusterItemViewController
                                     String oldValue,
                                     String newValue) {
                                 try {
-                                    maxMessagesToFetch = Integer.parseInt(newValue);
+                                    settings.setBatchSize(Integer.parseInt(newValue));
                                 } catch (NumberFormatException e) {
-                                    messageCountBox.valueProperty().set(oldValue);
+                                    settings.setBatchSize(Integer.parseInt(oldValue));
                                 }
                             }
                         });
@@ -252,8 +262,8 @@ public class BrowseClusterItemViewController
             case TOPIC:
             case PARTITION:
                 mainLayout.getChildren().clear();
-                mainLayout.getChildren().add(messagesSplitPane);
-                messagesSplitPane.setVisible(true);
+                mainLayout.getChildren().add(messagesBox);
+                messagesBox.setVisible(true);
                 messagesModel.setMessages(selectedNode.getMessages());
                 currentNode = selectedNode;
                 if (loading) {
@@ -343,7 +353,7 @@ public class BrowseClusterItemViewController
         try {
             var topicPartitions = getTopicPartitions(node);
             kafkaReader.getMessagesAsync(
-                    topicPartitions, maxMessagesToFetch, fetchFrom, this, node);
+                    topicPartitions, settings.getBatchSize(), fetchFrom, this, node);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -413,17 +423,24 @@ public class BrowseClusterItemViewController
 
     private void setupMessagesToolbar() {
         refreshButton.setOnAction(
-                new EventHandler<ActionEvent>() {
-                    @Override
-                    public void handle(ActionEvent actionEvent) {
-                        messagesTable.requestFocus();
-                        refreshMessages();
-                    }
+                actionEvent -> {
+                    messagesTable.requestFocus();
+                    refreshMessages();
                 });
 
         setupMessageCountBox();
         setupCursorBox();
         setupMessagesFilter();
+        collapseSettingsButton.setOnAction(
+                actionEvent -> {
+                    if (messagesBox.getChildren().contains(settingsPane)){
+                        messagesBox.getChildren().remove(settingsPane);
+                        collapseSettingsButton.setText("<<");
+                    } else {
+                        messagesBox.getChildren().add(settingsPane);
+                        collapseSettingsButton.setText(">>");
+                    }
+                });
     }
 
     private void refreshMessages() {

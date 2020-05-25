@@ -180,8 +180,6 @@ public class BrowseClusterViewController
                         .findFirst()
                         .orElse(null);
 
-        if (topicNode == null) return null;
-
         //        var partition = settings.getInt("selected_partition", -1);
         //        TreeItem<AbstractNode> partitionNode = null;
         //
