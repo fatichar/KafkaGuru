@@ -19,30 +19,31 @@ import java.net.URL;
 import java.util.*;
 
 @Log4j2
-public class KafkaViewController
-        implements Initializable, KafkaConnectionListener, ClusterItemSelectionListener {
-    @Getter private final String clusterId;
+public class KafkaViewController implements Initializable, KafkaConnectionListener, ClusterItemSelectionListener {
+    @Getter
+    private final String clusterId;
 
     @Getter
-    //    private final String id = "";
+    // private final String id = "";
     private BrowseClusterViewController browseClusterController;
 
     private BrowseClusterItemViewController browseClusterItemController;
 
     // UI controls
-    @FXML private SplitPane topicsMessagesPane;
+    @FXML
+    private SplitPane topicsMessagesPane;
 
     // data fields
     private KafkaInstance kafkaInstance;
 
-    @Getter private TabSettings settings;
+    @Getter
+    private TabSettings settings;
 
-    private DoubleProperty topicMessageDividerPos;
+    private DoubleProperty topicMessageDividerPos = new SimpleDoubleProperty(0.15);
 
     private ChangeListener<Number> dividerListener;
 
-    public KafkaViewController(
-            KafkaInstance kafkaInstance, TabSettings settings, Map<String, String> topicFormats) {
+    public KafkaViewController(KafkaInstance kafkaInstance, TabSettings settings, Map<String, String> topicFormats) {
         clusterId = kafkaInstance.getClusterInfo().getId();
         this.settings = settings;
         if (kafkaInstance == null) {
@@ -53,12 +54,10 @@ public class KafkaViewController
         kafkaInstance.addConnectionListener(this);
         var kafkaReader = new KafkaReader(kafkaInstance);
 
-        browseClusterController =
-                new BrowseClusterViewController(
-                        kafkaReader, settings.getClusterViewSettings(), topicFormats);
-        browseClusterItemController =
-                new BrowseClusterItemViewController(
-                        kafkaReader, settings.getCusterItemViewSettings());
+        browseClusterController = new BrowseClusterViewController(kafkaReader, settings.getClusterViewSettings(),
+                topicFormats);
+        browseClusterItemController = new BrowseClusterItemViewController(kafkaReader,
+                settings.getCusterItemViewSettings());
 
         browseClusterController.addItemSelectionListener(browseClusterItemController);
         browseClusterController.addItemSelectionListener(this);
@@ -73,9 +72,7 @@ public class KafkaViewController
         topicsMessagesPane.getItems().add(browseClusterItemView);
 
         topicMessageDividerPos = topicsMessagesPane.getDividers().get(0).positionProperty();
-        dividerListener =
-                (observable, oldValue, newValue) ->
-                        settings.setDividerPosition(newValue.doubleValue());
+        dividerListener = (observable, oldValue, newValue) -> settings.setDividerPosition(newValue.doubleValue());
         var lastDividerPos = settings.getDividerPosition();
         topicMessageDividerPos.set(lastDividerPos);
 
@@ -86,17 +83,11 @@ public class KafkaViewController
     }
 
     private void removeClusterNode() {
-        //        parent.destroy(this);
-        var removeCluster =
-                new Alert(
-                                Alert.AlertType.ERROR,
-                                "Failed to fetch topics."
-                                        + "\\nWould you like to remove the following cluster from your saved list?"
-                                        + "\n\n Cluster Name: "
-                                        + kafkaInstance.getName(),
-                                ButtonType.YES,
-                                ButtonType.NO)
-                        .showAndWait();
+        // parent.destroy(this);
+        var removeCluster = new Alert(Alert.AlertType.ERROR,
+                "Failed to fetch topics." + "\\nWould you like to remove the following cluster from your saved list?"
+                        + "\n\n Cluster Name: " + kafkaInstance.getName(),
+                ButtonType.YES, ButtonType.NO).showAndWait();
         if (removeCluster.orElse(ButtonType.NO).equals(ButtonType.YES)) {
             // TODO
         }
@@ -105,24 +96,25 @@ public class KafkaViewController
     @Override
     public void connected(String clusterId, boolean really) {
         if (really) {
-            kafkaInstance.refreshTopicsAsync(
-                    topics -> {
-                        topicMessageDividerPos.removeListener(dividerListener);
-                        var lastDividerPos = settings.getDividerPosition();
-                        browseClusterController.topicsUpdated(topics);
-                        topicMessageDividerPos.set(lastDividerPos);
-                        topicMessageDividerPos.addListener(dividerListener);
-                    });
+            kafkaInstance.refreshTopicsAsync(topics -> {
+                topicMessageDividerPos.removeListener(dividerListener);
+                var lastDividerPos = settings.getDividerPosition();
+                browseClusterController.topicsUpdated(topics);
+                topicMessageDividerPos.set(lastDividerPos);
+                topicMessageDividerPos.addListener(dividerListener);
+            });
         } else {
-            //            Platform.runLater(() -> removeClusterNode());
+            // Platform.runLater(() -> removeClusterNode());
         }
     }
 
     @Override
-    public void notifyUrlChange(String name, String oldUrl, String newUrl) {}
+    public void notifyUrlChange(String name, String oldUrl, String newUrl) {
+    }
 
     @Override
-    public void notifyNameChange(String id, String oldName, String newName) {}
+    public void notifyNameChange(String id, String oldName, String newName) {
+    }
 
     public void preferenceUpdated(ArrayList<String> nodeNames, String key, String value) {
         if (nodeNames.isEmpty()) {
@@ -142,8 +134,10 @@ public class KafkaViewController
     }
 
     @Override
-    public void currentNodeChanged(AbstractNode selectedNode) {}
+    public void currentNodeChanged(AbstractNode selectedNode) {
+    }
 
     @Override
-    public void messageFormatChanged(String topic) {}
+    public void messageFormatChanged(String topic) {
+    }
 }

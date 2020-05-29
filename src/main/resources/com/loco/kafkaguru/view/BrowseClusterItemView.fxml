@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import java.lang.*?>
 <?import javafx.collections.*?>
 <?import javafx.geometry.*?>
@@ -7,142 +6,157 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
-
-<fx:root prefHeight="536.0" prefWidth="878.0" type="AnchorPane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
+<fx:root prefHeight="536.0" prefWidth="878.0" type="AnchorPane"
+    xmlns="http://javafx.com/javafx/10.0.2-internal"
+    xmlns:fx="http://javafx.com/fxml/1">
     <children>
         <VBox fx:id="mainLayout" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-        <AnchorPane fx:id="clusterDetailsPane" prefHeight="125.0" prefWidth="605.0">
-            <children>
-               <GridPane prefHeight="116.0" prefWidth="566.0" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="50.0">
-                 <columnConstraints>
-                   <ColumnConstraints hgrow="SOMETIMES" maxWidth="288.0" minWidth="10.0" prefWidth="92.99999237060547" />
-                   <ColumnConstraints hgrow="SOMETIMES" maxWidth="506.6666742960613" minWidth="10.0" prefWidth="506.6666742960613" />
-                 </columnConstraints>
-                 <rowConstraints>
-                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                 </rowConstraints>
-                  <children>
-                     <Label text="Cluster Name" />
-                     <Label text="Kafka URL" GridPane.rowIndex="1" />
-                     <TextField fx:id="clusterNameField" GridPane.columnIndex="1" />
-                     <TextField fx:id="kafkaUrlField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                     <Button fx:id="connectButton" mnemonicParsing="false" text="Connect" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="2" />
-                  </children>
-               </GridPane>
-            </children></AnchorPane>
-         <HBox fx:id="messagesBox" VBox.vgrow="ALWAYS">
-            <children>
-              <SplitPane fx:id="messagesSplitPane" dividerPositions="0.6" maxHeight="1.7976931348623157E308" orientation="VERTICAL" HBox.hgrow="ALWAYS">
-                  <items>
-                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
-                          <children>
-                              <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                                  <children>
-                                      <HBox>
-                                          <Button fx:id="refreshButton" minWidth="-Infinity" mnemonicParsing="false" prefHeight="25.0" text="Refresh" />
-                                          <HBox spacing="10.0">
-                                              <children>
-                                                  <Label minWidth="-Infinity" prefHeight="25.0" text="Message contains" HBox.hgrow="NEVER">
-                                             <HBox.margin>
-                                                <Insets />
-                                             </HBox.margin></Label>
-                                                  <TextField fx:id="includeField" maxWidth="1.7976931348623157E308" minHeight="25" minWidth="100.0" prefColumnCount="100" prefHeight="25.0" />
-                                                  <Label minWidth="-Infinity" prefHeight="25.0" text="but not" HBox.hgrow="NEVER" />
-                                                  <TextField fx:id="excludeField" maxWidth="1.7976931348623157E308" minHeight="25" minWidth="100.0" prefColumnCount="100" prefHeight="25.0" />
-                                          <Button fx:id="collapseSettingsButton" minWidth="-Infinity" mnemonicParsing="false" prefWidth="35.0" text="&gt;&gt;" HBox.hgrow="NEVER" />
-                                              </children>
-                                       <HBox.margin>
-                                          <Insets />
-                                       </HBox.margin>
-                                       <padding>
-                                          <Insets left="10.0" />
-                                       </padding>
-                                          </HBox>
-                                          <HBox spacing="10.0" />
-                                    <VBox.margin>
-                                       <Insets />
-                                    </VBox.margin>
-                                      </HBox>
-                                      <TableView fx:id="messagesTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="643.0" VBox.vgrow="ALWAYS">
-                                          <columns>
-                                              <TableColumn fx:id="rowNumberColumn" maxWidth="40.0" prefWidth="40" resizable="false" text="Row" />
-                                              <TableColumn fx:id="partitionColumn" maxWidth="60.0" prefWidth="60" resizable="false" text="Partition" />
-                                              <TableColumn fx:id="offsetColumn" maxWidth="100.0" prefWidth="65" text="Offset" />
-                                              <TableColumn fx:id="keyColumn" maxWidth="200.0" prefWidth="150" text="Key" />
-                                              <TableColumn fx:id="messageSummaryColumn" maxWidth="1.7976931348623157E308" prefWidth="400" text="Message" />
-                                              <TableColumn fx:id="timestampColumn" maxWidth="300.0" prefWidth="150" text="Time" />
-                                          </columns>
-                                      </TableView>
-                                  </children>
-                              </VBox>
-                          </children>
-                      </AnchorPane>
-                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
-                          <children>
-                              <TextArea fx:id="messageArea" editable="false" layoutX="95.0" layoutY="-19.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                                  <cursor>
-                                      <Cursor fx:constant="TEXT" />
-                                  </cursor>
-                                  <font>
-                                      <Font name="Monospaced Regular" size="12.0" />
-                                  </font>
-                              </TextArea>
-                          </children>
-                      </AnchorPane>
-                  </items>
-              </SplitPane>
-               <TitledPane fx:id="settingsPane" maxHeight="1.7976931348623157E308" text="Settings" HBox.hgrow="NEVER">
-                  <content>
-                     <GridPane fx:id="settingsGrid" prefHeight="363.0" prefWidth="190.0">
-                       <columnConstraints>
-                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="89.0" minWidth="10.0" prefWidth="72.0" />
-                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="121.0" minWidth="10.0" prefWidth="118.0" />
-                       </columnConstraints>
-                       <rowConstraints>
-                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                           <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                           <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                           <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                       </rowConstraints>
+            <AnchorPane fx:id="clusterDetailsPane" prefHeight="125.0" prefWidth="605.0">
+                <children>
+                    <GridPane prefHeight="116.0" prefWidth="566.0" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="50.0">
+                        <columnConstraints>
+                            <ColumnConstraints hgrow="SOMETIMES" maxWidth="288.0" minWidth="10.0" prefWidth="92.99999237060547" />
+                            <ColumnConstraints hgrow="SOMETIMES" maxWidth="506.6666742960613" minWidth="10.0" prefWidth="506.6666742960613" />
+                        </columnConstraints>
+                        <rowConstraints>
+                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        </rowConstraints>
                         <children>
-                                   <Label minWidth="-Infinity" prefHeight="25.0" text="Load" />
-                                   <ComboBox fx:id="messageCountBox" editable="true" maxWidth="1.7976931348623157E308" prefWidth="75.0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS">
-                                       <items>
-                                           <FXCollections fx:factory="observableArrayList">
-                                               <String fx:value="10" />
-                                               <String fx:value="25" />
-                                               <String fx:value="50" />
-                                               <String fx:value="100" />
-                                               <String fx:value="250" />
-                                               <String fx:value="500" />
-                                               <String fx:value="1000" />
-                                           </FXCollections>
-                                       </items>
-                                   </ComboBox>
-                                   <Label minWidth="-Infinity" prefHeight="25.0" text="From" GridPane.rowIndex="1" />
-                                   <ComboBox fx:id="cursorBox" editable="true" maxWidth="1.7976931348623157E308" prefWidth="75.0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1">
-                                       <items>
-                                           <FXCollections fx:factory="observableArrayList">
-                                               <String fx:value="Beginning" />
-                                               <String fx:value="End" />
-                                           </FXCollections>
-                                       </items>
-                                       <value>
-                                           <String fx:value="End" />
-                                       </value>
-                                   </ComboBox>
-                           <DatePicker fx:id="timestampPicker" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                           <Spinner fx:id="offsetSpinner" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                            <Label text="Cluster Name" />
+                            <Label text="Kafka URL" GridPane.rowIndex="1" />
+                            <TextField fx:id="clusterNameField" GridPane.columnIndex="1" />
+                            <TextField fx:id="kafkaUrlField" promptText="One or more kafka broker URLs. Separate multiple URLs by space or semicolun" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            <Button fx:id="connectButton" mnemonicParsing="false" text="Connect" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="2" />
                         </children>
-                     </GridPane>
-                  </content>
-               </TitledPane>
-            </children>
-         </HBox>
+                    </GridPane>
+                </children>
+            </AnchorPane>
+            <HBox fx:id="messagesBox" VBox.vgrow="ALWAYS">
+                <children>
+                    <SplitPane fx:id="messagesSplitPane" dividerPositions="0.6" maxHeight="1.7976931348623157E308" orientation="VERTICAL" HBox.hgrow="ALWAYS">
+                        <items>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+                                <children>
+                                    <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                        <children>
+                                            <HBox>
+                                                <Button fx:id="refreshButton" minWidth="-Infinity" mnemonicParsing="false" prefHeight="25.0" text="Refresh" />
+                                                <HBox spacing="10.0">
+                                                    <children>
+                                                        <Label minWidth="-Infinity" prefHeight="25.0" text="Message contains" HBox.hgrow="NEVER">
+                                                            <HBox.margin>
+                                                                <Insets />
+                                                            </HBox.margin>
+                                                        </Label>
+                                                        <TextField fx:id="includeField" maxWidth="1.7976931348623157E308" minHeight="25" minWidth="100.0" prefColumnCount="100" prefHeight="25.0" />
+                                                        <Label minWidth="-Infinity" prefHeight="25.0" text="but not" HBox.hgrow="NEVER" />
+                                                        <TextField fx:id="excludeField" maxWidth="1.7976931348623157E308" minHeight="25" minWidth="100.0" prefColumnCount="100" prefHeight="25.0" />
+                                                        <Button fx:id="collapseSettingsButton" minWidth="-Infinity" mnemonicParsing="false" prefWidth="35.0" text="&gt;&gt;" HBox.hgrow="NEVER" />
+                                                    </children>
+                                                    <HBox.margin>
+                                                        <Insets />
+                                                    </HBox.margin>
+                                                    <padding>
+                                                        <Insets left="10.0" />
+                                                    </padding>
+                                                </HBox>
+                                                <HBox spacing="10.0" />
+                                                <VBox.margin>
+                                                    <Insets />
+                                                </VBox.margin>
+                                            </HBox>
+                                            <TableView fx:id="messagesTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="643.0" VBox.vgrow="ALWAYS">
+                                                <columns>
+                                                    <TableColumn fx:id="rowNumberColumn" maxWidth="40.0" prefWidth="40" resizable="false" text="Row" />
+                                                    <TableColumn fx:id="partitionColumn" maxWidth="60.0" prefWidth="60" resizable="false" text="Partition" />
+                                                    <TableColumn fx:id="offsetColumn" maxWidth="100.0" prefWidth="65" text="Offset" />
+                                                    <TableColumn fx:id="keyColumn" maxWidth="200.0" prefWidth="150" text="Key" />
+                                                    <TableColumn fx:id="messageSummaryColumn" maxWidth="1.7976931348623157E308" prefWidth="400" text="Message" />
+                                                    <TableColumn fx:id="timestampColumn" maxWidth="300.0" prefWidth="150" text="Time" />
+                                                </columns>
+                                            </TableView>
+                                        </children>
+                                    </VBox>
+                                </children>
+                            </AnchorPane>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+                                <children>
+                                    <TextArea fx:id="messageArea" editable="false" layoutX="95.0" layoutY="-19.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                        <cursor>
+                                            <Cursor fx:constant="TEXT" />
+                                        </cursor>
+                                        <font>
+                                            <Font name="Monospaced Regular" size="12.0" />
+                                        </font>
+                                    </TextArea>
+                                </children>
+                            </AnchorPane>
+                        </items>
+                    </SplitPane>
+                    <TitledPane fx:id="settingsPane" alignment="TOP_LEFT" maxHeight="1.7976931348623157E308" text="Settings" HBox.hgrow="NEVER">
+                        <content>
+                            <VBox>
+                                <children>
+                                    <GridPane fx:id="settingsGrid" alignment="TOP_CENTER" maxHeight="-Infinity" prefHeight="200.0" prefWidth="200.0" vgap="10.0" VBox.vgrow="NEVER">
+                                        <columnConstraints>
+                                            <ColumnConstraints hgrow="SOMETIMES" maxWidth="84.9999885559082" minWidth="10.0" prefWidth="63.99999237060547" />
+                                            <ColumnConstraints hgrow="ALWAYS" maxWidth="203.0" minWidth="10.0" prefWidth="136.00000762939453" />
+                                        </columnConstraints>
+                                        <rowConstraints>
+                                            <RowConstraints minHeight="-Infinity" vgrow="NEVER" />
+                                            <RowConstraints minHeight="-Infinity" vgrow="NEVER" />
+                                            <RowConstraints minHeight="-Infinity" vgrow="NEVER" />
+                                            <RowConstraints minHeight="-Infinity" vgrow="NEVER" />
+                                            <RowConstraints minHeight="-Infinity" vgrow="NEVER" />
+                                        </rowConstraints>
+                                        <children>
+                                            <Label minWidth="-Infinity" prefHeight="25.0" text="Load" />
+                                            <ComboBox fx:id="messageCountBox" editable="true" maxWidth="1.7976931348623157E308" prefWidth="75.0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS">
+                                                <items>
+                                                    <FXCollections fx:factory="observableArrayList">
+                                                        <String fx:value="10" />
+                                                        <String fx:value="25" />
+                                                        <String fx:value="50" />
+                                                        <String fx:value="100" />
+                                                        <String fx:value="250" />
+                                                        <String fx:value="500" />
+                                                        <String fx:value="1000" />
+                                                        <String fx:value="2500" />
+                                                        <String fx:value="5000" />
+                                                        <String fx:value="10000" />
+                                                    </FXCollections>
+                                                </items>
+                                            </ComboBox>
+                                            <Label minWidth="-Infinity" prefHeight="25.0" text="From" GridPane.rowIndex="1" />
+                                            <ComboBox fx:id="fetchFromBox" maxWidth="1.7976931348623157E308" prefWidth="75.0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1">
+                                                <items>
+                                                    <FXCollections fx:factory="observableArrayList">
+                                                        <String fx:value="Beginning" />
+                                                        <String fx:value="End" />
+                                                        <String fx:value="Offset" />
+                                                        <String fx:value="Timestamp" />
+                                                    </FXCollections>
+                                                </items>
+                                                <value>
+                                                    <String fx:value="End" />
+                                                </value>
+                                            </ComboBox>
+                                            <Label fx:id="offsetLabel" text="Offset" GridPane.rowIndex="2" />
+                                            <Spinner fx:id="offsetSpinner" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                            <Label fx:id="dateLabel" text="Date" GridPane.rowIndex="3" />
+                                            <DatePicker fx:id="datePicker" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                            <Label fx:id="timeLabel" text="Time (24-hour)" wrapText="true" GridPane.rowIndex="4" />
+                                            <TextField fx:id="timeField" promptText="HH:MM:SS" text="00:00:00" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                                        </children>
+                                    </GridPane>
+                                </children>
+                            </VBox>
+                        </content>
+                    </TitledPane>
+                </children>
+            </HBox>
         </VBox>
     </children>
 </fx:root>
