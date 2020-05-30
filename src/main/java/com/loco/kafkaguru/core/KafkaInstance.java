@@ -1,11 +1,11 @@
 package com.loco.kafkaguru.core;
 
 import com.loco.kafkaguru.core.listeners.KafkaConnectionListener;
-import com.loco.kafkaguru.core.listeners.KafkaTopicsListener;
 import com.loco.kafkaguru.model.KafkaClusterInfo;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.KafkaException;
@@ -18,10 +18,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Log4j2
 public class KafkaInstance {
-    private final int port;
     private Properties properties;
     @Getter
     private KafkaConsumer<String, byte[]> consumer;
@@ -41,7 +41,13 @@ public class KafkaInstance {
         this.clusterInfo = clusterInfo;
         this.properties = properties;
 
-        String[] parts = clusterInfo.getUrl().split(":");
+        if (!StringUtils.isBlank(clusterInfo.getUrl())) {
+            setUrl(clusterInfo.getUrl());
+        }
+    }
+
+    private String createUrl(String givenUrl) {
+        String[] parts = givenUrl.split(":");
         if (parts.length < 1) {
             throw new IllegalArgumentException("Url is empty");
         }
@@ -49,8 +55,9 @@ public class KafkaInstance {
             throw new IllegalArgumentException("Url should not have more than one ':' separator");
         }
         String host = parts[0];
-        port = parts.length > 1 ? Integer.parseInt(parts[1]) : 9092;
-        clusterInfo.setUrl(host);
+        int port = parts.length > 1 ? Integer.parseInt(parts[1]) : 9092;
+
+        return createUrl(host, port);
     }
 
     public static String createUrl(String host, int port) {
@@ -58,10 +65,14 @@ public class KafkaInstance {
     }
 
     private void connect() throws KafkaException, UnknownHostException {
-        setConsumer(createConsumer(createUrl(clusterInfo.getUrl(), port), properties));
+        if (StringUtils.isBlank(clusterInfo.getUrl())) {
+            throw new UnknownHostException("Kafka url is not specified");
+        }
+        setConsumer(createConsumer(clusterInfo.getUrl(), properties));
     }
 
     public Map<String, List<PartitionInfo>> refreshTopics() throws KafkaException {
+        log.info("refreshing topics");
         synchronized (consumer) {
             var remainingTries = 3;
             do {
@@ -99,25 +110,11 @@ public class KafkaInstance {
             log.info("Started connection thread");
             try {
                 connect();
-                connectionListeners.forEach(listener -> listener.connected(clusterInfo.getId(), true));
+                var topics = refreshTopics();
+                connectionListeners.forEach(cl -> cl.topicsUpdated(topics));
             } catch (KafkaException | UnknownHostException e) {
                 log.error("Failed to connect to kafka ", e);
-                connectionListeners.forEach(listener -> listener.connected(clusterInfo.getId(), false));
-            }
-        }).start();
-    }
-
-    public void refreshTopicsAsync(KafkaTopicsListener listener) {
-        log.info("Starting connection thread");
-        new Thread(() -> {
-            try {
-                log.info("Obtaining topics from kafka ");
-                var topics = refreshTopics();
-                listener.topicsUpdated(topics);
-                log.info("Obtained topics from kafka ");
-            } catch (KafkaException e) {
-                log.error("Failed to fetch topics from kafka for {}", clusterInfo.getUrl(), e);
-                listener.topicsUpdated(null);
+                connectionListeners.forEach(cl -> cl.connectionFailed(clusterInfo.getId()));
             }
         }).start();
     }
@@ -178,8 +175,11 @@ public class KafkaInstance {
 
     public void setUrl(String newUrl) {
         var oldUrl = clusterInfo.getUrl();
-        clusterInfo.setUrl(newUrl);
-        connectionListeners.forEach(listener -> listener.notifyUrlChange(clusterInfo.getId(), oldUrl, newUrl));
+        String[] givenUrls = newUrl.split(",");
+        var brokerUrls = Arrays.stream(givenUrls).map(url -> createUrl(url)).collect(Collectors.toList());
+        var clusterUrl = brokerUrls.stream().reduce((allUrls, url) -> allUrls + ',' + url).orElse("");
+        clusterInfo.setUrl(clusterUrl);
+        connectionListeners.forEach(listener -> listener.notifyUrlChange(clusterInfo.getId(), oldUrl, clusterUrl));
     }
 
     public void setName(String newName) {

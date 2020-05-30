@@ -81,8 +81,11 @@ public class KafkaReader {
             Map<TopicPartition, OffsetAndTimestamp> partitionOffsetMap = kafkaInstance.getConsumer()
                     .offsetsForTimes(partitionTimestampMap);
 
-            partitionOffsetMap.forEach(
-                    (tp, offsetAndTimestamp) -> kafkaInstance.getConsumer().seek(tp, offsetAndTimestamp.offset()));
+            partitionOffsetMap.forEach((tp, offsetAndTimestamp) -> {
+                    if (offsetAndTimestamp != null) {
+                        kafkaInstance.getConsumer().seek(tp, offsetAndTimestamp.offset());
+                    }
+            });
 
             var more = true;
             var totalCount = 0;
