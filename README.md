@@ -21,5 +21,5 @@ This will downloadthe dependencies, build the project, and create a jar file in 
 
 ## Run
 ```
-java -jar target/KafkaGuru-0.2.jar
+java -jar target/KafkaGuru-0.3.jar
 ```
