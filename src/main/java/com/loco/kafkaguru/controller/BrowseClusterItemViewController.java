@@ -23,6 +23,7 @@ import javafx.scene.layout.*;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 
 import java.io.File;
@@ -31,10 +32,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.*;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -171,6 +169,12 @@ public class BrowseClusterItemViewController
     private void setupSettingsPane() {
         removeRows();
         setupCursorBox();
+
+        timeField.focusedProperty().addListener((observable, oldValue, newValue) -> {
+            if (!newValue) {
+                sanitizeTimeField();
+            }
+        });
     }
 
     private void removeRows() {
@@ -248,8 +252,12 @@ public class BrowseClusterItemViewController
     }
 
     @Override
-    public void connected(String id, boolean really) {
-        connectButton.setDisable(really);
+    public void connectionFailed(String name) {
+        connectButton.setDisable(false);
+    }
+
+    @Override
+    public void topicsUpdated(Map<String, List<PartitionInfo>> topics) {
     }
 
     @Override
@@ -305,6 +313,9 @@ public class BrowseClusterItemViewController
     @Override
     public void messagesReceived(List<ConsumerRecord<String, byte[]>> records, Object sender, int batchNumber,
             boolean moreToCome) {
+        if (records == null) {
+            return;
+        }
         log.info("Received {} messages", records.size());
         Platform.runLater(() -> {
             log.info("Processing {} messages", records.size());
@@ -330,8 +341,11 @@ public class BrowseClusterItemViewController
                     fetchMessages(currentNode);
                     currentNodeStale = false;
                 } else {
-                    new Alert(Alert.AlertType.WARNING, "currentTopicNode != senderNode, and currentNodeStale is false")
-                            .showAndWait();
+                    // new Alert(Alert.AlertType.WARNING, "currentTopicNode != senderNode, and
+                    // currentNodeStale is false")
+                    // .showAndWait();
+                    log.warn("currentTopicNode{} != senderNode{}, and currentNodeStale is false", currentNode,
+                            senderNode);
                 }
             }
         });
@@ -384,6 +398,9 @@ public class BrowseClusterItemViewController
                 break;
             case "Timestamp":
                 var localDate = datePicker.getValue();
+                if (!sanitizeTimeField()) {
+                    return;
+                }
                 var timestamp = localDate.toString() + "T" + timeField.getText() + ".00Z";
                 try {
                     var dateTime = Instant.parse(timestamp);
@@ -408,6 +425,51 @@ public class BrowseClusterItemViewController
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean sanitizeTimeField() {
+        var userText = timeField.getText();
+        var parts = Arrays.asList(userText.split(":"));
+        if (parts.size() > 1) {
+            var hourText = parts.get(0);
+            var minuteText = parts.get(1);
+            var secondText = parts.size() > 2 ? parts.get(2) : "00";
+
+            try {
+                int hour = Integer.parseInt(hourText);
+                if (hour < 0 || hour > 23) {
+                    throw new Exception("hour must be between 0 and 23, inclusive");
+                }
+                int minute = Integer.parseInt(minuteText);
+                if (minute < 0 || minute > 59) {
+                    throw new Exception("minute must be between 0 and 59, inclusive");
+                }
+                int second = Integer.parseInt(secondText);
+                if (second < 0 || second > 59) {
+                    throw new Exception("second must be between 0 and 59, inclusive");
+                }
+
+                hourText = toTwoDigitString(hour);
+                minuteText = toTwoDigitString(minute);
+                secondText = toTwoDigitString(second);
+
+                var sanitizedText = hourText + ':' + minuteText + ':' + secondText;
+                timeField.setText(sanitizedText);
+                return true;
+            } catch (Exception e) {
+            }
+        }
+        timeField.setText("00:00:00");
+        return false;
+    }
+
+    private String toTwoDigitString(int num) {
+        String text;
+        text = Integer.toString(num);
+        if (text.length() == 1) {
+            text = '0' + text;
+        }
+        return text;
     }
 
     private List<TopicPartition> getTopicPartitions(AbstractNode selectedNode) {
@@ -523,9 +585,5 @@ public class BrowseClusterItemViewController
         } else {
             messageArea.clear();
         }
-    }
-
-    public void topicPreferenceUpdated(ArrayList<String> nodeNames, String topic, String key, String value) {
-        messagesModel.setMessages(currentNode.getMessages());
     }
 }

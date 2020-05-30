@@ -6,6 +6,7 @@ import com.loco.kafkaguru.core.listeners.KafkaConnectionListener;
 import com.loco.kafkaguru.view.BrowseClusterItemView;
 import com.loco.kafkaguru.view.BrowseClusterView;
 import com.loco.kafkaguru.viewmodel.*;
+import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
@@ -14,6 +15,7 @@ import javafx.scene.control.*;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.kafka.common.PartitionInfo;
 
 import java.net.URL;
 import java.util.*;
@@ -82,30 +84,20 @@ public class KafkaViewController implements Initializable, KafkaConnectionListen
         }
     }
 
-    private void removeClusterNode() {
-        // parent.destroy(this);
-        var removeCluster = new Alert(Alert.AlertType.ERROR,
-                "Failed to fetch topics." + "\\nWould you like to remove the following cluster from your saved list?"
-                        + "\n\n Cluster Name: " + kafkaInstance.getName(),
-                ButtonType.YES, ButtonType.NO).showAndWait();
-        if (removeCluster.orElse(ButtonType.NO).equals(ButtonType.YES)) {
-            // TODO
-        }
+    @Override
+    public void connectionFailed(String name) {
+
     }
 
     @Override
-    public void connected(String clusterId, boolean really) {
-        if (really) {
-            kafkaInstance.refreshTopicsAsync(topics -> {
-                topicMessageDividerPos.removeListener(dividerListener);
-                var lastDividerPos = settings.getDividerPosition();
-                browseClusterController.topicsUpdated(topics);
-                topicMessageDividerPos.set(lastDividerPos);
-                topicMessageDividerPos.addListener(dividerListener);
-            });
-        } else {
-            // Platform.runLater(() -> removeClusterNode());
-        }
+    public void topicsUpdated(Map<String, List<PartitionInfo>> topics) {
+        Platform.runLater(() -> {
+            topicMessageDividerPos.removeListener(dividerListener);
+            var lastDividerPos = settings.getDividerPosition();
+            browseClusterController.updateTopicsTree(topics);
+            topicMessageDividerPos.set(lastDividerPos);
+            topicMessageDividerPos.addListener(dividerListener);
+        });
     }
 
     @Override
@@ -114,23 +106,6 @@ public class KafkaViewController implements Initializable, KafkaConnectionListen
 
     @Override
     public void notifyNameChange(String id, String oldName, String newName) {
-    }
-
-    public void preferenceUpdated(ArrayList<String> nodeNames, String key, String value) {
-        if (nodeNames.isEmpty()) {
-            return;
-        }
-        nodeNames = new ArrayList<>(nodeNames);
-        var nodeName = nodeNames.remove(0);
-        switch (nodeName) {
-            case "topics":
-                var topic = nodeNames.remove(0);
-                browseClusterController.topicPreferenceUpdated(nodeNames, topic, key, value);
-                browseClusterItemController.topicPreferenceUpdated(nodeNames, topic, key, value);
-                break;
-            default:
-                break;
-        }
     }
 
     @Override

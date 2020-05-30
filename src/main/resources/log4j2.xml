@@ -8,9 +8,6 @@
     </Properties>
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT" follow="true">
-<!--            <JsonLayout complete="false" compact="true" eventEol="true"-->
-<!--                        includeStacktrace="true" stacktraceAsString="true" properties="false">-->
-<!--            </JsonLayout>-->
         </Console>
         <RollingFile name="fileLogger" fileName="${basePath}/application.log"
                      filePattern="${basePath}/application-%d{yyyy-MM-dd-HH}.log">

@@ -55,9 +55,9 @@ public class PartitionNode implements AbstractNode {
     }
 
     public void setFormatter(MessageFormatter formatter) {
-        log.info("In partition " + topicPartition.toString());
-        log.info("existing formatter " + (this.formatter == null ? "null" : this.formatter.name()));
-        log.info("Setting formatter " + formatter.name());
+        log.debug("In partition " + topicPartition.toString());
+        log.debug("existing formatter " + (this.formatter == null ? "null" : this.formatter.name()));
+        log.debug("Setting formatter " + formatter.name());
         if (this.formatter != formatter) {
             this.formatter = formatter;
             reformatMessages();

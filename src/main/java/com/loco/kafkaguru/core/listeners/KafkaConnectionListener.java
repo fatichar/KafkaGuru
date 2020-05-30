@@ -1,7 +1,13 @@
 package com.loco.kafkaguru.core.listeners;
 
+import org.apache.kafka.common.PartitionInfo;
+
+import java.util.List;
+import java.util.Map;
+
 public interface KafkaConnectionListener {
-    void connected(String name, boolean really);
+    void connectionFailed(String name);
+    public void topicsUpdated(Map<String, List<PartitionInfo>> topics);
 
     void notifyUrlChange(String name, String oldUrl, String newUrl);
 
