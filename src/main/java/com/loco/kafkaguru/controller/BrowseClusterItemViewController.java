@@ -8,10 +8,7 @@ import com.loco.kafkaguru.core.listeners.KafkaMessagesListener;
 import com.loco.kafkaguru.viewmodel.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.*;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
@@ -87,7 +84,7 @@ public class BrowseClusterItemViewController
     @FXML
     private TextField timeField;
     @FXML
-    private Spinner<Integer> offsetSpinner;
+    private TextField offsetField;
 
     // messages table
     @FXML
@@ -117,6 +114,7 @@ public class BrowseClusterItemViewController
     private AbstractNode currentNode;
     private AbstractNode selectedNode;
     private BooleanProperty followTreeSelection = new SimpleBooleanProperty(true);
+    // private double messageAreaScrollV = 0.0;
 
     public BrowseClusterItemViewController(KafkaReader kafkaReader, CusterItemViewSettings settings) {
         this.kafkaReader = kafkaReader;
@@ -164,6 +162,17 @@ public class BrowseClusterItemViewController
         });
         messagesContextMenu.getItems().add(saveItem);
         messagesTable.setContextMenu(messagesContextMenu);
+
+        // SimpleIntegerProperty count = new SimpleIntegerProperty(20);
+        // int rowHeight = 10;
+
+        // messageArea.prefHeightProperty().bindBidirectional(count);
+        // messageArea.minHeightProperty().bindBidirectional(count);
+        // messageArea.scrollTopProperty().addListener((ov, oldVal, newVal) -> {
+        // if (newVal.intValue() > rowHeight) {
+        // count.setValue(count.get() + newVal.intValue());
+        // }
+        // });
     }
 
     private void setupSettingsPane() {
@@ -179,7 +188,7 @@ public class BrowseClusterItemViewController
 
     private void removeRows() {
         settingsGrid.getChildren().remove(offsetLabel);
-        settingsGrid.getChildren().remove(offsetSpinner);
+        settingsGrid.getChildren().remove(offsetField);
         settingsGrid.getChildren().remove(dateLabel);
         settingsGrid.getChildren().remove(datePicker);
         settingsGrid.getChildren().remove(timeLabel);
@@ -205,7 +214,7 @@ public class BrowseClusterItemViewController
                 break;
             case "Offset":
                 settingsGrid.add(offsetLabel, 0, 2);
-                settingsGrid.add(offsetSpinner, 1, 2);
+                settingsGrid.add(offsetField, 1, 2);
                 break;
             case "Timestamp":
                 settingsGrid.add(dateLabel, 0, 2);
@@ -394,7 +403,7 @@ public class BrowseClusterItemViewController
                 offset = -1;
                 break;
             case "Offset":
-                offset = offsetSpinner.getValue();
+                offset = Integer.parseInt(offsetField.getText());
                 break;
             case "Timestamp":
                 var localDate = datePicker.getValue();
@@ -586,4 +595,21 @@ public class BrowseClusterItemViewController
             messageArea.clear();
         }
     }
+
+    // private void displayMessage(MessageModel message) {
+    // // messageArea.sc
+    // if (StringUtils.isNotEmpty(messageArea.getText())) {
+    // var max = textScrollPane.getVmax();
+    // messageAreaScrollV = textScrollPane.getVvalue();
+    // }
+    // if (message != null) {
+    // // messageArea.clear();
+    // // new ScrollPane().va
+    // messageArea.setText(message.getMessageBody());
+    // textScrollPane.setVvalue(messageAreaScrollV);
+    // // messageArea.setScrollTop(1.0);
+    // } else {
+    // messageArea.clear();
+    // }
+    // }
 }
