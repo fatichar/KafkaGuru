@@ -22,6 +22,7 @@ public class KafkaReader {
     private KafkaInstance kafkaInstance;
     private long maxWait = 10000;
     private long waitPerMessage = 10;
+    private volatile boolean abortReceived = false;
 
     public KafkaReader(@NonNull KafkaInstance instance) {
         this.kafkaInstance = instance;
@@ -58,9 +59,10 @@ public class KafkaReader {
                 totalCount += batchSize;
                 log.info("obtained {} messages, total {}", batchSize, totalCount);
 
-                more = (totalCount < maxMessageCount) && (batchSize > 0);
+                more = (totalCount < maxMessageCount) && (batchSize > 0) && !abortReceived;
                 listener.messagesReceived(batch, sender, batchNumber, more);
             }
+            abortReceived = false;
 
             log.info("Finished reading {} messages from topic: {} in {} seconds.", totalCount, topic,
                     stopWatch.getTime(TimeUnit.SECONDS));
@@ -186,5 +188,9 @@ public class KafkaReader {
                 listener.messagesReceived(null, sender, 0, false);
             }
         }).start();
+    }
+
+    public void abortCurrentCalls() {
+        abortReceived = true;
     }
 }

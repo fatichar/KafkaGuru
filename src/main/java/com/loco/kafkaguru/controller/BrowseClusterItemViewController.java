@@ -498,7 +498,7 @@ public class BrowseClusterItemViewController
 
     private void setLoadingStatus(boolean isLoading) {
         this.loading = isLoading;
-        refreshButton.setDisable(isLoading);
+        refreshButton.setText(isLoading ? "Stop" : "Refresh");
     }
 
     private static List<MessageModel> createMessages(int startRow, List<ConsumerRecord<String, byte[]>> records,
@@ -535,8 +535,12 @@ public class BrowseClusterItemViewController
 
     private void setupMessagesToolbar() {
         refreshButton.setOnAction(actionEvent -> {
-            messagesTable.requestFocus();
-            refreshMessages();
+            if (!loading) {
+                messagesTable.requestFocus();
+                refreshMessages();
+            } else {
+                cancelRefreshMessages();
+            }
         });
 
         setupMessageCountBox();
@@ -555,6 +559,11 @@ public class BrowseClusterItemViewController
     private void refreshMessages() {
         currentNode = selectedNode;
         fetchMessages(currentNode);
+    }
+
+    private void cancelRefreshMessages() {
+        setLoadingStatus(false);
+        kafkaReader.abortCurrentCalls();
     }
 
     private void setupMessagesFilter() {
