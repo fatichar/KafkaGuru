@@ -53,6 +53,8 @@ public class PluginLoader extends ClassLoader {
 
     private static MessageFormatter createJsonFormatter() {
         return new MessageFormatter() {
+            private ObjectMapper mapper = new ObjectMapper();
+
             @Override
             public String name() {
                 return "Json";
@@ -61,8 +63,14 @@ public class PluginLoader extends ClassLoader {
             @Override
             public String format(byte[] data) {
                 var text = new String(data);
-                String indented = new JSONObject(text).toString(4);
-                return indented;
+                try {
+                    var object = mapper.readValue(text, Object.class);
+                    var json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
+                    return json;
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+                return text;
             }
         };
     }
