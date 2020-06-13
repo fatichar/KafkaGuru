@@ -1,3 +1,15 @@
+- Productization
+  - Branding
+  - Add/remove menu items
+  - Support keyboard shortcuts
+  - Installation
+  - Topic/partition info
+  - UI polish
+    - Column sizing
+    - Colors
+    - Save all user UI settings
+
+
 - Core kafka
   - Cluster info view
   - Don't destroy tab if connection failed
@@ -9,9 +21,9 @@
     - only messages not in cache need to be fetched from kafka
     - two types of cache - memory and disk
     - max cache size for both - take from preferences
-    - Prefetch
+    - Pre-fetch
       - Run listener in background to keep updating cache with latest messages
-      - Setting to include/exclude topics for prefetch
+      - Setting to include/exclude topics for pre-fetch
 
 - User Registration
   - Sync settings
@@ -19,14 +31,19 @@
     - Domain-level sync for kafka servers
 
 - Browse Mode
+  - option to retain messages in table
+  - auto refresh on select should be triggered only if it can bring new data. e.g., if not browing from the end, and required number of messages are already loaded, then refresh will bring the same data again
+  - back-forward feature. On every reload, previous view can be accessed using 'back'.
+  - During multi-part loading, focus auto-shifts to message list. So any other UI can't be used.
+  - load messages from disk
   - tail mode
-  - Remote search
-    - Search on kafka within specific offsets/time
+  - Search on kafka within specific offsets/time
+    - Set time from a displayed message
   - View message body
     - Syntax highlighting
     - Search term highlighting
   - diff two messages
-  
+
 - Alerts!
   - on message count
   - on message rate (below/above threshold)

@@ -138,6 +138,8 @@ public class BrowseClusterItemViewController
         setupMessagesToolbar();
         setupSettingsPane();
 
+        messagesTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
         rowNumberColumn.setCellValueFactory(new PropertyValueFactory<>("index"));
         partitionColumn.setCellValueFactory(new PropertyValueFactory<>("partition"));
         offsetColumn.setCellValueFactory(new PropertyValueFactory<>("offset"));
