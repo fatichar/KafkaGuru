@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loco.kafkaguru.MessageFormatter;
 import lombok.extern.log4j.Log4j2;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +75,6 @@ public class PluginLoader extends ClassLoader {
     }
 
     public static void loadPlugins(PluginInfo pluginInfo) {
-
         for (var jarName : pluginInfo.classes.keySet()) {
             loadPlugins(jarName, pluginInfo.classes.get(jarName));
         }
@@ -93,7 +91,7 @@ public class PluginLoader extends ClassLoader {
         }
         URL[] urls = new URL[0];
         try {
-            urls = new URL[] {new URL("jar:file:" + jarFile.getName() + "!/")};
+            urls = new URL[] { new URL("jar:file:" + jarFile.getName() + "!/") };
         } catch (MalformedURLException ex) {
             ex.printStackTrace();
         }
