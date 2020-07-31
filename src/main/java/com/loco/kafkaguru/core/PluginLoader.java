@@ -24,7 +24,7 @@ public class PluginLoader extends ClassLoader {
     private static final String PLUGIN_INFO_FILE = "PluginClasses.json";
     public static Map<String, MessageFormatter> formatters = new HashMap<>();
     private static ObjectMapper mapper = new ObjectMapper();
-    public static final MessageFormatter defaultFormatter = createJsonFormatter();;
+    public static MessageFormatter defaultFormatter;
 
     public static void loadPlugins() {
         loadNativeFormatters();
@@ -47,7 +47,31 @@ public class PluginLoader extends ClassLoader {
     }
 
     private static void loadNativeFormatters() {
-        formatters.put(defaultFormatter.name(), defaultFormatter);
+        defaultFormatter = createTextFormatter();
+        add(defaultFormatter);
+        add(createJsonFormatter());
+    }
+
+    private static MessageFormatter createTextFormatter() {
+        return new MessageFormatter() {
+
+            @Override
+            public String name() {
+                return "Text";
+            }
+
+            @Override
+            public String format(byte[] data) {
+                var text = new String(data);
+                return text;
+            }
+        };
+    }
+
+    private static void add(MessageFormatter formatter) {
+        if (formatter != null) {
+            formatters.put(formatter.name(), formatter);
+        }
     }
 
     private static MessageFormatter createJsonFormatter() {
