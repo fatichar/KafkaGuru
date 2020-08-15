@@ -11,9 +11,6 @@
 
 
 - Core kafka
-  - Cluster info view
-  - Don't destroy tab if connection failed
-  - 'Connect' button
   - Load topics only once per cluster
   - Save topics in config
   - Make KafkaReader stateful
