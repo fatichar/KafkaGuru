@@ -296,7 +296,9 @@ public class BrowseClusterItemViewController
 
     private void updateView(AbstractNode selectedNode) {
         if (selectedNode.getType().equals(NodeType.PARTITION)) {
+          if (!fetchFromBox.getItems().contains("Offset")) {
             fetchFromBox.getItems().add("Offset");
+          }
         } else {
             fetchFromBox.getItems().remove("Offset");
         }
