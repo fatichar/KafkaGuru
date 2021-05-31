@@ -23,5 +23,5 @@ jobs:
       run: mvn -B package --file pom.xml
     - uses: actions/upload-artifact@v2
       with:
-        name: Upload artifact
+        name: KafkaGuru.jar
         path: target/KafkaGuru-0.3.jar
