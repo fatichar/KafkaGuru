@@ -83,14 +83,20 @@
               </AnchorPane>
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                 <children>
-                  <TextArea fx:id="messageArea" editable="false" layoutX="95.0" layoutY="-19.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                    <cursor>
-                      <Cursor fx:constant="TEXT" />
-                    </cursor>
-                    <font>
-                      <Font name="Monospaced Regular" size="12.0" />
-                    </font>
-                  </TextArea>
+                  <org.fxmisc.flowless.VirtualizedScrollPane
+                        layoutX="95.0" layoutY="-19.0"
+                        prefHeight="200.0" prefWidth="200.0"
+                        AnchorPane.bottomAnchor="0.0"
+                        AnchorPane.leftAnchor="0.0"
+                        AnchorPane.rightAnchor="0.0"
+                        AnchorPane.topAnchor="0.0">
+                        <content>
+                    <org.fxmisc.richtext.CodeArea fx:id="messageArea"
+                        editable="false"
+                    >
+                    </org.fxmisc.richtext.CodeArea>
+                  </content>
+                </org.fxmisc.flowless.VirtualizedScrollPane>
                 </children>
               </AnchorPane>
             </items>

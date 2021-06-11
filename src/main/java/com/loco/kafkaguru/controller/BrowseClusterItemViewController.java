@@ -33,6 +33,8 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.fxmisc.richtext.CodeArea;
+
 @Log4j2
 public class BrowseClusterItemViewController
         implements Initializable, ClusterItemSelectionListener, KafkaMessagesListener, KafkaConnectionListener {
@@ -101,8 +103,9 @@ public class BrowseClusterItemViewController
     private TableColumn<MessageModel, String> messageSummaryColumn;
     @FXML
     private TableColumn<MessageModel, Date> timestampColumn;
+
     @FXML
-    private TextArea messageArea;
+    private CodeArea messageArea;
 
     private CusterItemViewSettings settings;
 
@@ -603,7 +606,7 @@ public class BrowseClusterItemViewController
 
     private void displayMessage(MessageModel message) {
         if (message != null) {
-            messageArea.setText(message.getMessageBody());
+            messageArea.replaceText(message.getMessageBody());
         } else {
             messageArea.clear();
         }

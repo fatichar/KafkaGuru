@@ -11,13 +11,13 @@ Extract the java archive you downloaded, and set environment variable JAVA_HOME 
 Additionally,, you will also need maven to build the project from source.
 
 ## Build
-Open a terminal, and change to the project direcotry (which contains pom.xml)
+Open a terminal, and change to the project directory (which contains pom.xml)
 
 Run thew following command:
 ```
 mvn compile package
 ```
-This will downloadthe dependencies, build the project, and create a jar file in the target directory.
+This will download the dependencies, build the project, and create a jar file in the target directory.
 
 ## Run
 ```
