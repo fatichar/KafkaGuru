@@ -159,19 +159,6 @@ public class BrowseClusterViewController implements Initializable, KafkaConnecti
         return topicNode;
     }
 
-    private TopicNode getTopicNode(String topic) {
-        var topicItem = topicsTree.getRoot().getChildren().stream().filter(item -> {
-            var node = item.getValue();
-            if (node instanceof TopicNode) {
-                var topicName = ((TopicNode) node).getTopic();
-                return topic.equals(topicName);
-            }
-            return false;
-        }).findFirst();
-
-        return topicItem.isEmpty() ? null : (TopicNode) topicItem.get().getValue();
-    }
-
     private List<TreeItem<AbstractNode>> createTopicItems(ClusterNode clusterNode) {
         var topicNodes = clusterNode.getTopicNodes().stream().map(topicNode -> createTopicItem(topicNode))
                 .collect(Collectors.toList());
@@ -212,6 +199,9 @@ public class BrowseClusterViewController implements Initializable, KafkaConnecti
         if (newTopics != null) {
             createTopicNodes(clusterNode, topics);
             var topicItems = createTopicItems(clusterNode);
+
+            topicItems.sort((ti1, ti2) -> ti1.getValue().toString().compareToIgnoreCase(ti2.getValue().toString()));
+
             rootNode.getChildren().addAll(topicItems);
 
             var lastSelectedTreeItem = getLastSelectedTreeItem(rootNode);
