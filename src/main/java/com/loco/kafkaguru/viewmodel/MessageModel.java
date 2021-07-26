@@ -25,7 +25,7 @@ public class MessageModel {
 
     private SimpleObjectProperty<Date> timestamp;
 
-    String timestampPattern = "E, dd MMM yyyy HH:mm:ss";
+    String timestampPattern = "E, dd MMM yyyy HH:mm:ss.SSS";
     SimpleDateFormat simpleDateFormat = new SimpleDateFormat(timestampPattern);
     private MessageFormatter formatter;
 
