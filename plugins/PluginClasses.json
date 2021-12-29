@@ -1,7 +1,4 @@
 {
   "classes": {
-    "TaranaFormatter.jar": [
-      "com.tarana.tcc.formatters.DeviceMessageFormatter"
-    ]
   }
 }
