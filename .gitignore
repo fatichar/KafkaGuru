@@ -32,6 +32,7 @@ target/
 .idea/**/dynamic.xml
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
+.settings
 
 # Gradle
 .idea/**/gradle.xml
@@ -127,3 +128,4 @@ hs_err_pid*
 Saved Messages
 **.iml
 # End of https://www.gitignore.io/api/java,intellij,code-java
+.factorypath
