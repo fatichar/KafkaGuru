@@ -400,7 +400,7 @@ public class BrowseClusterItemViewController
     }
 
     private void fetchMessages(AbstractNode node) {
-        int offset = -1;
+        long offset = -1;
         long epochMilli = -1;
         switch (fetchFrom) {
             case "Beginning":
@@ -410,7 +410,7 @@ public class BrowseClusterItemViewController
                 offset = -1;
                 break;
             case "Offset":
-                offset = Integer.parseInt(offsetField.getText());
+                offset = Long.parseLong(offsetField.getText());
                 break;
             case "Timestamp":
                 var localDate = datePicker.getValue();
