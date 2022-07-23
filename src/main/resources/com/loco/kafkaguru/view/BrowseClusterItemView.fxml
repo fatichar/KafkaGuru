@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import java.lang.*?>
 <?import javafx.collections.*?>
 <?import javafx.geometry.*?>
-<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
-<fx:root prefHeight="536.0" prefWidth="878.0" type="AnchorPane"
-  xmlns="http://javafx.com/javafx/10.0.2-internal"
-  xmlns:fx="http://javafx.com/fxml/1">
+<?import org.fxmisc.flowless.*?>
+<?import org.fxmisc.richtext.*?>
+
+<fx:root prefHeight="536.0" prefWidth="878.0" type="AnchorPane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
   <children>
     <VBox fx:id="mainLayout" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
       <AnchorPane fx:id="clusterDetailsPane" prefHeight="125.0" prefWidth="605.0">
@@ -67,12 +67,17 @@
                           <Insets />
                         </VBox.margin>
                       </HBox>
+                      <HBox>
+<!--                        <Button fx:id="loadPreviousButton" minWidth="-Infinity" mnemonicParsing="false" prefHeight="25.0" text="Load previous" />-->
+                        <Button fx:id="loadNextButton" minWidth="-Infinity" mnemonicParsing="false" prefHeight="25.0" text="Load next" />
+                        <TextField fx:id="loadCountField" maxWidth="1.8" minHeight="25" minWidth="82.0" prefColumnCount="100" prefHeight="25.0" prefWidth="82.0" />
+                      </HBox>
                       <TableView fx:id="messagesTable" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS">
                         <columns>
-                          <TableColumn fx:id="rowNumberColumn" minWidth="60.0" maxWidth="60.0" prefWidth="60" text="Row" />
-                          <TableColumn fx:id="partitionColumn" minWidth="60.0" maxWidth="60.0" prefWidth="60" text="Partition" />
-                          <TableColumn fx:id="offsetColumn" minWidth="60.0" maxWidth="100.0" prefWidth="80" text="Offset" />
-                          <TableColumn fx:id="keyColumn" minWidth="80.0" maxWidth="200.0" prefWidth="150" text="Key" />
+                          <TableColumn fx:id="rowNumberColumn" maxWidth="60.0" minWidth="60.0" prefWidth="60" text="Row" />
+                          <TableColumn fx:id="partitionColumn" maxWidth="60.0" minWidth="60.0" prefWidth="60" text="Partition" />
+                          <TableColumn fx:id="offsetColumn" maxWidth="100.0" minWidth="60.0" prefWidth="80" text="Offset" />
+                          <TableColumn fx:id="keyColumn" maxWidth="200.0" minWidth="80.0" prefWidth="150" text="Key" />
                           <TableColumn fx:id="messageSummaryColumn" maxWidth="1000" prefWidth="400" text="Message" />
                           <TableColumn fx:id="timestampColumn" maxWidth="300.0" prefWidth="150" text="Time" />
                         </columns>
@@ -83,17 +88,9 @@
               </AnchorPane>
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                 <children>
-                  <org.fxmisc.flowless.VirtualizedScrollPane
-                        layoutX="95.0" layoutY="-19.0"
-                        prefHeight="200.0" prefWidth="200.0"
-                        AnchorPane.bottomAnchor="0.0"
-                        AnchorPane.leftAnchor="0.0"
-                        AnchorPane.rightAnchor="0.0"
-                        AnchorPane.topAnchor="0.0">
+                  <org.fxmisc.flowless.VirtualizedScrollPane layoutX="95.0" layoutY="-19.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                         <content>
-                    <org.fxmisc.richtext.CodeArea fx:id="messageArea"
-                        editable="false"
-                    >
+                    <org.fxmisc.richtext.CodeArea fx:id="messageArea" editable="false">
                     </org.fxmisc.richtext.CodeArea>
                   </content>
                 </org.fxmisc.flowless.VirtualizedScrollPane>

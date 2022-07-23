@@ -5,6 +5,7 @@ import com.loco.kafkaguru.core.KafkaReader;
 import com.loco.kafkaguru.core.PluginLoader;
 import com.loco.kafkaguru.core.listeners.KafkaConnectionListener;
 import com.loco.kafkaguru.core.listeners.KafkaMessagesListener;
+import com.loco.kafkaguru.pojo.FetchMessagesRequest;
 import com.loco.kafkaguru.viewmodel.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -63,6 +64,13 @@ public class BrowseClusterItemViewController
     private TextField excludeField;
     @FXML
     Button collapseSettingsButton;
+
+//    @FXML
+//    private Button loadPreviousButton;
+    @FXML
+    private Button loadNextButton;
+    @FXML
+    private TextField loadCountField;
 
     // message load settings
     @FXML
@@ -350,7 +358,7 @@ public class BrowseClusterItemViewController
             setLoadingStatus(moreToCome);
 
             if (currentNode == senderNode) {
-                updateMessagesTable();
+                updateMessagesTable(!moreToCome);
                 log.info("Added {} messages to the table", records.size());
             } else {
                 if (currentNodeStale) {
@@ -388,15 +396,17 @@ public class BrowseClusterItemViewController
 
     @Override
     public void messageFormatChanged(String topic) {
-        updateMessagesTable();
+        updateMessagesTable(true);
     }
 
-    private void updateMessagesTable() {
+    private void updateMessagesTable(boolean focus) {
         var selectionModel = messagesTable.getSelectionModel();
         int selectedRow = selectionModel.getSelectedIndex();
         messagesModel.setMessages(currentNode.getMessages());
         selectionModel.select(selectedRow);
-        messagesTable.requestFocus();
+        if (focus) {
+            messagesTable.requestFocus();
+        }
     }
 
     private void fetchMessages(AbstractNode node) {
@@ -506,6 +516,7 @@ public class BrowseClusterItemViewController
     private void setLoadingStatus(boolean isLoading) {
         this.loading = isLoading;
         refreshButton.setText(isLoading ? "Stop" : "Refresh");
+        loadNextButton.setDisable(isLoading);
     }
 
     private static List<MessageModel> createMessages(int startRow, List<ConsumerRecord<String, byte[]>> records,
@@ -549,6 +560,14 @@ public class BrowseClusterItemViewController
                 cancelRefreshMessages();
             }
         });
+        loadNextButton.setOnAction(actionEvent -> {
+            if (!loading) {
+                messagesTable.requestFocus();
+                loadNextMessages(getLoadCount());
+            } else {
+                cancelRefreshMessages();
+            }
+        });
 
         setupMessageCountBox();
         setupMessagesFilter();
@@ -561,6 +580,42 @@ public class BrowseClusterItemViewController
                 collapseSettingsButton.setText(">>");
             }
         });
+    }
+
+    private void loadNextMessages(int loadCount) {
+//        currentNode = selectedNode;
+        // find beginning offsets of current topic-partitions
+//        var messages = currentNode.getMessages();
+        var topicPartitions = getTopicPartitions(currentNode);
+//
+//        List<PartitionNode> partitionNodes = null;
+//        switch (currentNode.getType()) {
+//            case TOPIC:
+//                partitionNodes = ((TopicNode)currentNode).getPartitions();
+//                break;
+//            case PARTITION:
+//                partitionNodes = new ArrayList<>();
+//                partitionNodes.add((PartitionNode) currentNode);
+//                break;
+//            case CLUSTER:
+//            default:
+//                setLoadingStatus(false);
+//                break;
+//        }
+//        if (partitionNodes == null) {
+//            return;
+//        }
+//        var requests = partitionNodes.stream().map(partitionNode -> {
+//            long offset = partitionNode.getMessages().get(currentNode.getMessages().size() - 1).getOffset();
+//            return new FetchMessagesRequest(partitionNode.getTopicPartition(), offset, true);
+//        });
+        setLoadingStatus(true);
+        kafkaReader.getMoreAsync(topicPartitions, loadCount, this, currentNode);
+    }
+
+    private int getLoadCount() {
+        var loadCountText = loadCountField.getText();
+        return Integer.parseInt(loadCountText);
     }
 
     private void refreshMessages() {
