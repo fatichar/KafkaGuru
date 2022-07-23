@@ -93,11 +93,12 @@ public class KafkaInstance {
             throws UnknownHostException {
         this.properties.putIfAbsent("bootstrap.servers", url);
         this.properties.putIfAbsent("client.id", InetAddress.getLocalHost().getHostName());
-        this.properties.putIfAbsent("group.id", "kafka-tool");
+        this.properties.putIfAbsent("group.id", "KafkaGuru");
         this.properties.putIfAbsent("auto.offset.reset", "earliest");
         this.properties.putIfAbsent("enable.auto.commit", "false");
-        this.properties.putIfAbsent("max.poll.records", 100);
-        this.properties.putIfAbsent("max.partition.fetch.bytes", 100_000);
+        this.properties.putIfAbsent("max.poll.records", 1);
+        this.properties.putIfAbsent("max.partition.fetch.bytes", 5000_000);
+        this.properties.putIfAbsent("fetch.max.bytes", 1000_000);
         this.properties.putIfAbsent("key.deserializer", StringDeserializer.class);
         this.properties.putIfAbsent("value.deserializer", ByteArrayDeserializer.class);
 

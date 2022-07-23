@@ -1,6 +1,7 @@
 package com.loco.kafkaguru.core;
 
 import com.loco.kafkaguru.core.listeners.KafkaMessagesListener;
+import com.loco.kafkaguru.pojo.FetchMessagesRequest;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
@@ -28,6 +29,44 @@ public class KafkaReader {
         this.kafkaInstance = instance;
     }
 
+    private void fetchMore(
+            List<TopicPartition> topicPartitions,
+            int maxMessageCount,
+            KafkaMessagesListener listener,
+            Object sender) {
+        var stopWatch = StopWatch.createStarted();
+
+        synchronized (kafkaInstance) {
+            var more = true;
+            var totalCount = 0;
+            int initialWait = 0000;
+            var batch = new ArrayList<ConsumerRecord<String, byte[]>>();
+            for (int batchNumber = 2; more; ) {
+                log.info("iteration" + batchNumber);
+                var localBatch = getNextBatch(maxMessageCount - totalCount, maxWait + initialWait);
+                initialWait = 0;
+
+                var batchSize = localBatch.size();
+                totalCount += batchSize;
+                log.info("obtained {} messages, total {}", batchSize, totalCount);
+                batch.addAll(localBatch);
+
+                more = (totalCount < maxMessageCount) && (batchSize > 0) && !abortReceived;
+                if (!more || batch.size() % 20 == 0) {
+                    synchronized (abortReceived) {
+                        log.info("sent messages to UI");
+                        listener.messagesReceived(batch, sender, batchNumber++, more);
+                    }
+                    batch = new ArrayList<>();
+                }
+            }
+            abortReceived = false;
+
+            log.info("Finished reading {} messages in {} seconds.", totalCount,
+                    stopWatch.getTime(TimeUnit.SECONDS));
+        }
+    }
+
     private void fetchMessages(@NonNull List<TopicPartition> topicPartitions, int maxMessageCount, long fetchFrom,
             KafkaMessagesListener listener, Object sender) {
         log.info("Getting messages");
@@ -52,16 +91,23 @@ public class KafkaReader {
 
             var more = true;
             var totalCount = 0;
-            for (int batchNumber = 1; more; ++batchNumber) {
-                var batch = getNextBatch(maxMessageCount - totalCount, maxWait);
+            int initialWait = 0000;
+            var batch = new ArrayList<ConsumerRecord<String, byte[]>>();
+            for (int batchNumber = 1; more;) {
+                var localBatch = getNextBatch(maxMessageCount - totalCount, maxWait + initialWait);
+                batch.addAll(localBatch);
+                initialWait = 0;
 
-                var batchSize = batch.size();
+                var batchSize = localBatch.size();
                 totalCount += batchSize;
                 log.info("obtained {} messages, total {}", batchSize, totalCount);
 
-                synchronized (abortReceived) {
-                    more = (totalCount < maxMessageCount) && (batchSize > 0) && !abortReceived;
-                    listener.messagesReceived(batch, sender, batchNumber, more);
+                more = (totalCount < maxMessageCount) && (batchSize > 0) && !abortReceived;
+                if (!more || batch.size() % 20 == 0) {
+                    synchronized (abortReceived) {
+                        listener.messagesReceived(batch, sender, batchNumber++, more);
+                    }
+                    batch = new ArrayList<>();
                 }
             }
             abortReceived = false;
@@ -93,16 +139,24 @@ public class KafkaReader {
 
             var more = true;
             var totalCount = 0;
+            var batch = new ArrayList<ConsumerRecord<String, byte[]>>();
             for (int batchNumber = 1; more; ++batchNumber) {
-                var batch = getNextBatch(maxMessageCount - totalCount, maxWait);
+                var localBatch = getNextBatch(maxMessageCount - totalCount, maxWait);
 
-                var batchSize = batch.size();
+                var batchSize = localBatch.size();
                 totalCount += batchSize;
+                batch.addAll(localBatch);
                 log.info("obtained {} messages, total {}", batchSize, totalCount);
 
-                more = (totalCount < maxMessageCount) && (batchSize > 0);
-                listener.messagesReceived(batch, sender, batchNumber, more);
+                more = (totalCount < maxMessageCount) && (batchSize > 0) && !abortReceived;
+                if (!more || batch.size() % 20 == 0) {
+                    synchronized (abortReceived) {
+                        listener.messagesReceived(batch, sender, batchNumber++, more);
+                    }
+                    batch = new ArrayList<>();
+                }
             }
+            abortReceived = false;
 
             log.info("Finished reading {} messages from topic: {} in {} seconds.", totalCount, topic,
                     stopWatch.getTime(TimeUnit.SECONDS));
@@ -173,6 +227,18 @@ public class KafkaReader {
             log.info("calling getMessages()");
             try {
                 fetchMessages(topicPartitions, limit, fetchFrom, listener, sender);
+            } catch (Exception e) {
+                listener.messagesReceived(null, sender, 0, false);
+            }
+        }).start();
+    }
+
+    public void getMoreAsync(List<TopicPartition> topicPartitions, int limit, KafkaMessagesListener listener, Object sender) {
+        log.info("In getMoreAsync()");
+        new Thread(() -> {
+            log.info("calling fetchMore()");
+            try {
+                fetchMore(topicPartitions, limit, listener, sender);
             } catch (Exception e) {
                 listener.messagesReceived(null, sender, 0, false);
             }
