@@ -358,7 +358,7 @@ public class BrowseClusterItemViewController
             setLoadingStatus(moreToCome);
 
             if (currentNode == senderNode) {
-                updateMessagesTable();
+                updateMessagesTable(!moreToCome);
                 log.info("Added {} messages to the table", records.size());
             } else {
                 if (currentNodeStale) {
@@ -396,10 +396,10 @@ public class BrowseClusterItemViewController
 
     @Override
     public void messageFormatChanged(String topic) {
-        updateMessagesTable();
+        updateMessagesTable(true);
     }
 
-    private void updateMessagesTable() {
+    private void updateMessagesTable(boolean focus) {
         var selectionModel = messagesTable.getSelectionModel();
         int selectedRow = selectionModel.getSelectedIndex();
         messagesModel.setMessages(currentNode.getMessages());

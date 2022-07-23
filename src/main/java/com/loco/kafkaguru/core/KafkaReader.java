@@ -88,6 +88,7 @@ public class KafkaReader {
             // TODO ensure that all partitions are from the same topic?
             kafkaInstance.assign(topicPartitions);
             seek(partitionOffsets, fetchFrom, maxMessageCount);
+//            kafkaInstance.getConsumer().resume(kafkaInstance.getConsumer().paused());
 
             var more = true;
             var totalCount = 0;
@@ -111,6 +112,7 @@ public class KafkaReader {
                 }
             }
             abortReceived = false;
+//            kafkaInstance.getConsumer().pause(topicPartitions);
 
             log.info("Finished reading {} messages from topic: {} in {} seconds.", totalCount, topic,
                     stopWatch.getTime(TimeUnit.SECONDS));
